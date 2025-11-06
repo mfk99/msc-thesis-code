@@ -1,5 +1,6 @@
 .vscode
 output
+build
 sandbox
 index.dSYM
 
