@@ -4,7 +4,18 @@
 #include <string>
 #include "../settings/settings.h"
 #include "../../../ipamir.h"
+#include "../../../rustsat/capi/rustsat.h"
 using namespace std;
+using namespace RustSAT;
+
+void addPairwiseLit(int lit, void *data) {
+  cout << "lit:" << lit << "\n";
+  cout << "data1:" << data << "\n";
+  if (!lit) {
+    int *cnt = (int *)data;
+    (*cnt)++;
+  }
+}
 
 vector<int> requestUserVariables() {
     vector<int> userVariables;
@@ -190,6 +201,21 @@ void enterSchedulingGenerator(){
              << " atMostOne=" << atMostOneClauses.size()
              << " roomConflicts=" << roomConflictClauses.size()
              << " total=" << clauseCount << "\n";
+    }
+
+    if (false){
+        Pairwise *pairwise = pairwise_new();
+        pairwise_add(pairwise, 1);
+        pairwise_add(pairwise, 2);
+        pairwise_add(pairwise, 3);
+        pairwise_add(pairwise, 4);
+
+        uint32_t n_used = 4;
+        uint32_t n_clauses = 0;
+
+        pairwise_encode(pairwise, &n_used, &addPairwiseLit, &n_clauses);
+        
+        pairwise_drop(pairwise);
     }
 }
 

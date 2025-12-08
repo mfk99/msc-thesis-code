@@ -9,11 +9,14 @@ CXXFLAGS ?= -Wall -DNDEBUG -O3 -std=c++17
 
 IPAMIRSOLVER ?= solver2022
 IPASIRSOLVER ?= minisat220
+RUSTSAT = ./../../rustsat/target/release/librustsat_capi.a
 
 DEPS = ../../maxsat/$(IPAMIRSOLVER)/libipamir$(IPAMIRSOLVER).a
 LIBS = -L../../maxsat/$(IPAMIRSOLVER)/ -lipamir$(IPAMIRSOLVER)
 LIBS += $(shell cat ../../maxsat/$(IPAMIRSOLVER)/LIBS 2>/dev/null)
 LIBS += $(shell cat ../../maxsat/$(IPASIRSOLVER)/LIBS 2>/dev/null)
+LIBS += $(RUSTSAT)
+LIBS += -ldl -lpthread -lm
 
 all: $(TARGET)
 
