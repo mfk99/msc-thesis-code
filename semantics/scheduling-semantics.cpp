@@ -2,6 +2,7 @@
 #include <vector>
 #include <limits>
 #include <string>
+#include <chrono>
 #include "../settings/settings.h"
 #include "../../../ipamir.h"
 #include "../../../rustsat/capi/rustsat.h"
@@ -330,36 +331,36 @@ void enterIpamirSchedulingGenerator(){
     clauseCount += (long long)roomConflictClauses.size();
 
     // Output in DIMACS CNF format
-    cout << "p cnf " << vars << " " << clauseCount << "\n";
+    if (debug) cout << "p cnf " << vars << " " << clauseCount << "\n";
 
     // print must-have (positive) clauses and add to ipamir
     for (const auto &cl : mustHaveRoomClauses) {
         for (int lit : cl) {
-            cout << lit << " ";
+            if (debug) cout << lit << " ";
             ipamir_add_hard(solver, lit);
         }
         ipamir_add_hard(solver, 0);
-        cout << "0\n";
+        if (debug) cout << "0\n";
     }
 
     // print at-most-one clauses and add to ipamir
     for (const auto &cl : atMostOneClauses) {
         for (int lit : cl) {
-            cout << lit << " ";
+            if (debug) cout << lit << " ";
             ipamir_add_hard(solver, lit);
         }
         ipamir_add_hard(solver, 0);
-        cout << "0\n";
+        if (debug) cout << "0\n";
     }
 
     // print room conflict clauses and add to ipamir
     for (const auto &cl : roomConflictClauses) {
         for (int lit : cl) {
-            cout << lit << " ";
+            if (debug) cout << lit << " ";
             ipamir_add_hard(solver, lit);
         }
         ipamir_add_hard(solver, 0);
-        cout << "0\n";
+        if (debug) cout << "0\n";
     }
 
     if (debug) {
@@ -371,10 +372,35 @@ void enterIpamirSchedulingGenerator(){
 
     cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     // Print answer and ask user for input
+    
     while (true)
     {
+        std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         int code = ipamir_solve(solver);
+        std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+        long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+        cout << "Solving took:" << timeDiff << "[µs], " << timeDiff/1000000.0 << "[s] \n";
         cout << "Code returned by ipamir: " << code << "\n";
+        if (code == 30) {
+            cout << "Assignment:\n";
+            for (int i = 0; i < totalCourseHours; i++) {
+                for (int i2 = 0; i2 < classRooms; i2++) {
+                    for (int i3 = 0; i3 < timeSlots; i3++) {
+                        int literal = literals[i][i2][i3];
+                        int literal_assignment = ipamir_val_lit(solver, literal);
+                        if (literal_assignment > 0) {
+                            cout << "Coursehour " << i << " assigned to classroom " << i2 << " at timeslot " << i3 << "\n";
+                        }
+                    }
+                }
+                if (debug) {
+                    cout << "Full assignment:\n";
+                    int lit_assignment = ipamir_val_lit(solver, i);
+                    cout << lit_assignment << "\n";
+                }
+            }
+        }
+
         cout << "Insert a new clause or give an empty input to exit\n";
         string input;
         std::getline(cin, input);
