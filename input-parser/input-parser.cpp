@@ -7,6 +7,8 @@ unsigned short verbose = 0;
 unsigned short generate = 0;
 unsigned short execute = 0;
 
+string fileName = "";
+
 void parseInput(int argc, char **argv)
 {
     for (int i = 0; i < argc; ++i)
@@ -27,12 +29,16 @@ void parseInput(int argc, char **argv)
             cout << "Execution enabled \n";
             execute = 1;
         }
+        if (str == "-n")
+        {
+            cout << "Execution enabled \n";
+            fileName = argv[i + 1];
+        }
         if (str == "-help")
         {
             printHelp();
             return;
         }
-        // printf("argv[%d]: %s\n", i, argv[i]);
     }
 }
 
@@ -61,8 +67,6 @@ vector<int> parseEncodingGenerationVariables(int argc, char **argv)
     int i2 = i + 5;
     for (; i < i2; i++)
     {
-        printf("i:%i\n", i);
-        printf("[i]:%i\n", atoi(argv[i]));
         userVariables.push_back(atoi(argv[i]));
     }
     return userVariables;

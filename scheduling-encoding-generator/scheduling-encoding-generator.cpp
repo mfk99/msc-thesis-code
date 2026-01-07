@@ -1,35 +1,20 @@
-#include <iostream>
-#include <vector>
-#include <limits>
-#include <string>
-#include <chrono>
 #include "../input-parser/input-parser.h"
 #include "../../../ipamir.h"
 #include "../../../rustsat/capi/rustsat.h"
+#include "scheduling-encoding-generator.h"
+#include <iostream>
+#include <string>
+#include <chrono>
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <fstream>
 using namespace std;
 using namespace RustSAT;
 
-vector<int> parseUserClauseInput(string input)
+void generateEncoding(vector<int> generationVariables)
 {
-    vector<int> clauseLiterals;
-    string delimiter = " ";
-    size_t pos = 0;
-    string token;
-    while ((pos = input.find(delimiter)) != string::npos)
-    {
-        token = input.substr(0, pos);
-        clauseLiterals.push_back(stoi(token));
-        input.erase(0, pos + delimiter.length());
-    }
-    clauseLiterals.push_back(stoi(input));
-    return clauseLiterals;
-}
-
-void enterIpamirSchedulingGenerator(vector<int> generationVariables)
-{
-
-    void *solver = ipamir_init();
-
+    string encodingFileName = getFileName();
     int days = generationVariables[0];
     int hours = generationVariables[1];
     int classRooms = generationVariables[2];
@@ -39,7 +24,8 @@ void enterIpamirSchedulingGenerator(vector<int> generationVariables)
     int timeSlots = days * hours;
     int totalCourseHours = courses * courseHours;
 
-    cout << "Creating clauses for " << courseHours << " course hours with " << timeSlots << " available timeslots and " << classRooms << " classrooms.\n";
+    if (verbose)
+        cout << "Creating clauses for " << courseHours << " course hours with " << timeSlots << " available timeslots and " << classRooms << " classrooms.\n";
 
     //
 
@@ -49,11 +35,11 @@ void enterIpamirSchedulingGenerator(vector<int> generationVariables)
     1. Two classes can't have the same room
     2. Every class must have a classroom
     */
-
-    cout << "Creating clauses for " << courseHours << " hours per course ("
-         << totalCourseHours << " course-hours total) with "
-         << timeSlots << " available timeslots and "
-         << classRooms << " classrooms.\n";
+    if (verbose)
+        cout << "Creating clauses for " << courseHours << " hours per course ("
+             << totalCourseHours << " course-hours total) with "
+             << timeSlots << " available timeslots and "
+             << classRooms << " classrooms.\n";
 
     // Create 3D vector of literals:
     vector<vector<vector<int>>> literals;
@@ -150,121 +136,118 @@ void enterIpamirSchedulingGenerator(vector<int> generationVariables)
     clauseCount += (long long)mustHaveRoomClauses.size();
     clauseCount += (long long)atMostOneClauses.size();
     clauseCount += (long long)roomConflictClauses.size();
-
-    // Output in DIMACS CNF format
     if (verbose)
-        cout << "[VERBOSE] p cnf " << vars << " " << clauseCount << "\n";
+        printEncoding(vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses);
+    writeEncodingToFile(encodingFileName, vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses);
+}
 
-    // print must-have (positive) clauses and add to ipamir
+void printEncoding(long long vars, long long clauseCount,
+                   vector<vector<int>> mustHaveRoomClauses,
+                   vector<vector<int>> atMostOneClauses,
+                   vector<vector<int>> roomConflictClauses)
+{
+    // Output in DIMACS CNF format
+    cout << "[VERBOSE] p cnf " << vars << " " << clauseCount << "\n";
+
+    // print must-have (positive) clauses
     for (const auto &cl : mustHaveRoomClauses)
     {
+        cout << "[VERBOSE]";
         for (int lit : cl)
         {
-            if (verbose)
-                cout << "[VERBOSE]";
-            if (verbose)
-                cout << lit << " ";
-            ipamir_add_hard(solver, lit);
+
+            cout << lit << " ";
         }
-        ipamir_add_hard(solver, 0);
-        if (verbose)
-            cout << "0\n";
+        cout << "0\n";
     }
 
     // print at-most-one clauses and add to ipamir
     for (const auto &cl : atMostOneClauses)
     {
-        if (verbose)
-            cout << "[VERBOSE]";
+        cout << "[VERBOSE]";
         for (int lit : cl)
         {
-            if (verbose)
-                cout << lit << " ";
-            ipamir_add_hard(solver, lit);
+            cout << lit << " ";
         }
-        ipamir_add_hard(solver, 0);
-        if (verbose)
-            cout << "0\n";
+        cout << "0\n";
     }
 
     // print room conflict clauses and add to ipamir
     for (const auto &cl : roomConflictClauses)
     {
-        if (verbose)
-            cout << "[VERBOSE]";
-
+        cout << "[VERBOSE]";
         for (int lit : cl)
         {
-            if (verbose)
-                cout << lit << " ";
-            ipamir_add_hard(solver, lit);
+            cout << lit << " ";
         }
-        ipamir_add_hard(solver, 0);
-        if (verbose)
-            cout << "0\n";
+        cout << "0\n";
     }
 
+    cout << "[VERBOSE] Clauses: mustHave=" << mustHaveRoomClauses.size()
+         << " atMostOne=" << atMostOneClauses.size()
+         << " roomConflicts=" << roomConflictClauses.size()
+         << " total=" << clauseCount << "\n";
+}
+
+void writeEncodingToFile(string encodingFileName, long long vars, long long clauseCount,
+                         vector<vector<int>> mustHaveRoomClauses,
+                         vector<vector<int>> atMostOneClauses,
+                         vector<vector<int>> roomConflictClauses)
+{
     if (verbose)
+        cout << "Writing to file: " << encodingFileName << "\n";
+
+    ofstream encodingfile;
+    encodingfile.open(encodingFileName);
+
+    encodingfile << "p cnf " << vars << " " << clauseCount << "\n";
+    for (const auto &cl : mustHaveRoomClauses)
     {
-        cout << "[VERBOSE] Clauses: mustHave=" << mustHaveRoomClauses.size()
-             << " atMostOne=" << atMostOneClauses.size()
-             << " roomConflicts=" << roomConflictClauses.size()
-             << " total=" << clauseCount << "\n";
+        for (int lit : cl)
+        {
+
+            encodingfile << lit << " ";
+        }
+        encodingfile << "0\n";
     }
 
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    // Print answer and ask user for input
-
-    while (true)
+    for (const auto &cl : atMostOneClauses)
     {
-        std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-        int code = ipamir_solve(solver);
-        std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
-        long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-        cout << "Solving took:" << timeDiff << "[µs], " << timeDiff / 1000000.0 << "[s] \n";
-        cout << "Code returned by ipamir: " << code << "\n";
-        if (code == 30)
+        for (int lit : cl)
         {
-            cout << "Assignment:\n";
-            for (int i = 0; i < totalCourseHours; i++)
-            {
-                for (int i2 = 0; i2 < classRooms; i2++)
-                {
-                    for (int i3 = 0; i3 < timeSlots; i3++)
-                    {
-                        int literal = literals[i][i2][i3];
-                        int literal_assignment = ipamir_val_lit(solver, literal);
-                        if (literal_assignment > 0)
-                        {
-                            cout << "Coursehour " << i << " assigned to classroom " << i2 << " at timeslot " << i3 << "\n";
-                        }
-                    }
-                }
-                if (verbose)
-                {
-                    cout << "Full assignment:\n";
-                    int lit_assignment = ipamir_val_lit(solver, i);
-                    cout << lit_assignment << "\n";
-                }
-            }
+            encodingfile << lit << " ";
         }
-
-        cout << "Insert a new clause or give an empty input to exit\n";
-        string input;
-        std::getline(cin, input);
-        if (input.size() == 0)
-            break;
-        vector<int> clauseLiterals = parseUserClauseInput(input);
-        for (int lit : clauseLiterals)
-        {
-            if (verbose)
-            {
-                cout << "Adding literal " << lit << "\n";
-            }
-            ipamir_add_hard(solver, lit);
-        }
+        encodingfile << "0\n";
     }
-    cout << "Releasing ipamir...\n";
-    ipamir_release(solver);
-    cout << "Exiting...\n";
+
+    for (const auto &cl : roomConflictClauses)
+    {
+        for (int lit : cl)
+        {
+            encodingfile << lit << " ";
+        }
+        encodingfile << "0\n";
+    }
+
+    encodingfile.close();
+    if (verbose)
+        cout << "Finished writing encoding to file: " << encodingFileName << "\n";
+}
+
+string getFileName()
+{
+    if (fileName == "")
+    {
+        auto timeStamp = std::chrono::system_clock::now();
+        std::time_t timeStamp_time = std::chrono::system_clock::to_time_t(timeStamp);
+        string timeStampString = std::ctime(&timeStamp_time);
+        timeStampString = timeStampString.substr(4, timeStampString.size() - 9);
+        timeStampString[3] = '-';
+        timeStampString[6] = '-';
+        timeStampString[15] = '-';
+        timeStampString.erase(std::remove_if(timeStampString.begin(), timeStampString.end(), ::isspace), timeStampString.end());
+        string encodingFileName = timeStampString + "timetableEncoding.cnf";
+        return encodingFileName;
+    }
+    return fileName;
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "semantics/scheduling-semantics.h"
 #include "input-parser/input-parser.h"
+#include "scheduling-encoding-generator/scheduling-encoding-generator.h"
 using namespace std;
 
 int main(int argc, char **argv)
@@ -11,7 +12,7 @@ int main(int argc, char **argv)
     {
         cout << "Generating... \n";
         vector<int> generationParameters = parseEncodingGenerationVariables(argc, argv);
-        enterIpamirSchedulingGenerator(generationParameters);
+        generateEncoding(generationParameters);
     }
 
     if (execute)
