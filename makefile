@@ -1,7 +1,7 @@
 TARGET = output
 OBJ_DIR = build
 
-SRCS = index.cpp settings/settings.cpp semantics/scheduling-semantics.cpp
+SRCS = index.cpp semantics/scheduling-semantics.cpp input-parser/input-parser.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 CXX = g++
