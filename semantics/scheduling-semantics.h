@@ -4,4 +4,5 @@
 #include <string>
 
 std::vector<int> parseUserClauseInput(std::string input);
-void enterIpamirSchedulingGenerator(std::vector<int> generationVariables);
+std::vector<int> parseGenerationVariablesFromFile(std::string filePath);
+void runBenchMark(std::string encodingFilePath);

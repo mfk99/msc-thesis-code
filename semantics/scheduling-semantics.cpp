@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <limits>
 #include <string>
@@ -25,9 +26,32 @@ vector<int> parseUserClauseInput(string input)
     return clauseLiterals;
 }
 
-void enterIpamirSchedulingGenerator(vector<int> generationVariables)
+vector<int> parseGenerationVariablesFromFile(string filePath)
 {
+    vector<int> generationVariables;
+    string s;
 
+    // Read from the text file
+    ifstream readStream(filePath);
+    for (int i = 0; i < 5; i++)
+    {
+        getline(readStream, s);
+        size_t pos = s.find(" ");
+        if (pos != string::npos)
+        {
+            string valueStr = s.substr(pos + 1);
+            int value = stoi(valueStr);
+            generationVariables.push_back(value);
+        }
+    }
+    readStream.close();
+
+    return generationVariables;
+}
+
+void runBenchMark(string encodingFilePath)
+{
+    vector<int> generationVariables = parseGenerationVariablesFromFile(encodingFilePath);
     void *solver = ipamir_init();
 
     int days = generationVariables[0];

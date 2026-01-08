@@ -18,6 +18,7 @@ int main(int argc, char **argv)
     if (execute)
     {
         cout << "Executing... \n";
+        runBenchMark(fileName);
     }
 
     return 0;
