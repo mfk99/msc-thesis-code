@@ -201,6 +201,7 @@ void writeEncodingToFile(string encodingFileName, long long vars, long long clau
     encodingfile.open(encodingFileName);
 
     encodingfile << "p cnf " << vars << " " << clauseCount << "\n";
+    encodingfile << "*mustHaveRoomClauses - Each course hour must have a room and a timeslot assigned \n";
     for (const auto &cl : mustHaveRoomClauses)
     {
         for (int lit : cl)
@@ -211,6 +212,7 @@ void writeEncodingToFile(string encodingFileName, long long vars, long long clau
         encodingfile << "0\n";
     }
 
+    encodingfile << "*atMostOneClauses - A course hour cannot occupy more than one room and timeslot \n";
     for (const auto &cl : atMostOneClauses)
     {
         for (int lit : cl)
@@ -220,6 +222,7 @@ void writeEncodingToFile(string encodingFileName, long long vars, long long clau
         encodingfile << "0\n";
     }
 
+    encodingfile << "*roomConflictClauses - Two different courses can't have hours assigned to same room and timeslot \n";
     for (const auto &cl : roomConflictClauses)
     {
         for (int lit : cl)
