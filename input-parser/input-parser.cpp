@@ -31,7 +31,6 @@ void parseInput(int argc, char **argv)
         }
         if (str == "-n")
         {
-            cout << "Execution enabled \n";
             fileName = argv[i + 1];
         }
         if (str == "-help")
