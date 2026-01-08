@@ -138,7 +138,7 @@ void generateEncoding(vector<int> generationVariables)
     clauseCount += (long long)roomConflictClauses.size();
     if (verbose)
         printEncoding(vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses);
-    writeEncodingToFile(encodingFileName, vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses);
+    writeEncodingToFile(encodingFileName, vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses, generationVariables);
 }
 
 void printEncoding(long long vars, long long clauseCount,
@@ -192,13 +192,26 @@ void printEncoding(long long vars, long long clauseCount,
 void writeEncodingToFile(string encodingFileName, long long vars, long long clauseCount,
                          vector<vector<int>> mustHaveRoomClauses,
                          vector<vector<int>> atMostOneClauses,
-                         vector<vector<int>> roomConflictClauses)
+                         vector<vector<int>> roomConflictClauses,
+                         vector<int> generationVariables)
 {
     if (verbose)
         cout << "Writing to file: " << encodingFileName << "\n";
 
     ofstream encodingfile;
     encodingfile.open(encodingFileName);
+
+    int days = generationVariables[0];
+    int hours = generationVariables[1];
+    int classRooms = generationVariables[2];
+    int courses = generationVariables[3];
+    int courseHours = generationVariables[4];
+
+    encodingfile << "*days: " << days << "\n";
+    encodingfile << "*hours: " << hours << "\n";
+    encodingfile << "*classRooms: " << classRooms << "\n";
+    encodingfile << "*courses: " << courses << "\n";
+    encodingfile << "*courseHours: " << courseHours << "\n";
 
     encodingfile << "p cnf " << vars << " " << clauseCount << "\n";
     encodingfile << "*mustHaveRoomClauses - Each course hour must have a room and a timeslot assigned \n";

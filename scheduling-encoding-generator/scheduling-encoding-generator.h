@@ -12,4 +12,5 @@ void printEncoding(long long vars, long long clauseCount,
 void writeEncodingToFile(std::string encodingFileName, long long vars, long long clauseCount,
                          std::vector<std::vector<int>> mustHaveRoomClauses,
                          std::vector<std::vector<int>> atMostOneClauses,
-                         std::vector<std::vector<int>> roomConflictClauses);
+                         std::vector<std::vector<int>> roomConflictClauses,
+                         std::vector<int> generationVariables);
