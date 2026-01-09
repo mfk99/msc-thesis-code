@@ -9,6 +9,7 @@
 #include <cctype>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 using namespace std;
 using namespace RustSAT;
 
@@ -195,11 +196,15 @@ void writeEncodingToFile(string encodingFileName, long long vars, long long clau
                          vector<vector<int>> roomConflictClauses,
                          vector<int> generationVariables)
 {
+    namespace fs = std::filesystem;
+    string directoryPath = "./encodings";
+    fs::create_directories(directoryPath);
     if (verbose)
-        cout << "Writing to file: " << encodingFileName << "\n";
+        cout
+            << "Writing to file: " << directoryPath << "/" << encodingFileName << "\n";
 
     ofstream encodingfile;
-    encodingfile.open(encodingFileName);
+    encodingfile.open(directoryPath + "/" + encodingFileName);
 
     int days = generationVariables[0];
     int hours = generationVariables[1];
