@@ -3,6 +3,7 @@ output
 build
 sandbox
 index.dSYM
+encodings
 
 *.obj
 *.o
