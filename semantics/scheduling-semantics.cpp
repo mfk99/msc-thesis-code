@@ -31,6 +31,8 @@ vector<int> parseGenerationVariablesFromFile(string filePath)
     vector<int> generationVariables;
     string s;
 
+    cout << "AAA";
+
     // Read from the text file
     ifstream readStream(filePath);
     for (int i = 0; i < 5; i++)
@@ -51,6 +53,7 @@ vector<int> parseGenerationVariablesFromFile(string filePath)
 
 void runBenchMark(string encodingFilePath)
 {
+    cout << "AAA";
     vector<int> generationVariables = parseGenerationVariablesFromFile(encodingFilePath);
     void *solver = ipamir_init();
 

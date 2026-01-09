@@ -5,7 +5,7 @@
 extern unsigned short verbose;
 extern unsigned short generate;
 extern unsigned short execute;
-extern std::string fileName;
+extern std::string filePath;
 
 void parseInput(int argc, char **argv);
 void printHelp();

@@ -7,7 +7,7 @@ unsigned short verbose = 0;
 unsigned short generate = 0;
 unsigned short execute = 0;
 
-string fileName = "";
+string filePath = "";
 
 void parseInput(int argc, char **argv)
 {
@@ -31,7 +31,7 @@ void parseInput(int argc, char **argv)
         }
         if (str == "-n")
         {
-            fileName = argv[i + 1];
+            filePath = argv[i + 1];
         }
         if (str == "-help")
         {

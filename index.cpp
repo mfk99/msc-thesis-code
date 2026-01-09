@@ -14,11 +14,11 @@ int main(int argc, char **argv)
         vector<int> generationParameters = parseEncodingGenerationVariables(argc, argv);
         generateEncoding(generationParameters);
     }
-
+    cout << filePath;
     if (execute)
     {
         cout << "Executing... \n";
-        runBenchMark(fileName);
+        runBenchMark(filePath);
     }
 
     return 0;

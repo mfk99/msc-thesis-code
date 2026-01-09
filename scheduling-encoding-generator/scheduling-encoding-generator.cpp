@@ -15,7 +15,7 @@ using namespace RustSAT;
 
 void generateEncoding(vector<int> generationVariables)
 {
-    string encodingFileName = getFileName();
+    string encodingFilePath = getFilePath();
     int days = generationVariables[0];
     int hours = generationVariables[1];
     int classRooms = generationVariables[2];
@@ -139,7 +139,7 @@ void generateEncoding(vector<int> generationVariables)
     clauseCount += (long long)roomConflictClauses.size();
     if (verbose)
         printEncoding(vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses);
-    writeEncodingToFile(encodingFileName, vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses, generationVariables);
+    writeEncodingToFile(encodingFilePath, vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses, generationVariables);
 }
 
 void printEncoding(long long vars, long long clauseCount,
@@ -190,21 +190,18 @@ void printEncoding(long long vars, long long clauseCount,
          << " total=" << clauseCount << "\n";
 }
 
-void writeEncodingToFile(string encodingFileName, long long vars, long long clauseCount,
+void writeEncodingToFile(string encodingFilePath, long long vars, long long clauseCount,
                          vector<vector<int>> mustHaveRoomClauses,
                          vector<vector<int>> atMostOneClauses,
                          vector<vector<int>> roomConflictClauses,
                          vector<int> generationVariables)
 {
-    namespace fs = std::filesystem;
-    string directoryPath = "./encodings";
-    fs::create_directories(directoryPath);
     if (verbose)
         cout
-            << "Writing to file: " << directoryPath << "/" << encodingFileName << "\n";
+            << "Writing to file: " << encodingFilePath << "\n";
 
     ofstream encodingfile;
-    encodingfile.open(directoryPath + "/" + encodingFileName);
+    encodingfile.open(encodingFilePath);
 
     int days = generationVariables[0];
     int hours = generationVariables[1];
@@ -252,13 +249,17 @@ void writeEncodingToFile(string encodingFileName, long long vars, long long clau
 
     encodingfile.close();
     if (verbose)
-        cout << "Finished writing encoding to file: " << encodingFileName << "\n";
+        cout << "Finished writing encoding to file: " << encodingFilePath << "\n";
 }
 
-string getFileName()
+string getFilePath()
 {
-    if (fileName == "")
+    if (filePath == "")
     {
+        namespace fs = std::filesystem;
+        string directoryPath = "./encodings";
+        fs::create_directories(directoryPath);
+
         auto timeStamp = std::chrono::system_clock::now();
         std::time_t timeStamp_time = std::chrono::system_clock::to_time_t(timeStamp);
         string timeStampString = std::ctime(&timeStamp_time);
@@ -267,8 +268,8 @@ string getFileName()
         timeStampString[6] = '-';
         timeStampString[15] = '-';
         timeStampString.erase(std::remove_if(timeStampString.begin(), timeStampString.end(), ::isspace), timeStampString.end());
-        string encodingFileName = timeStampString + "timetableEncoding.cnf";
-        return encodingFileName;
+        string encodingFilePath = directoryPath + "/" + timeStampString + "timetableEncoding.cnf";
+        filePath = encodingFilePath;
     }
-    return fileName;
+    return filePath;
 }
