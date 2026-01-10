@@ -4,6 +4,7 @@
 #include <limits>
 #include <string>
 #include <chrono>
+#include <bits/stdc++.h>
 #include "../input-parser/input-parser.h"
 #include "../../../ipamir.h"
 #include "../../../rustsat/capi/rustsat.h"
@@ -31,8 +32,6 @@ vector<int> parseGenerationVariablesFromFile(string filePath)
     vector<int> generationVariables;
     string s;
 
-    cout << "AAA";
-
     // Read from the text file
     ifstream readStream(filePath);
     for (int i = 0; i < 5; i++)
@@ -53,190 +52,123 @@ vector<int> parseGenerationVariablesFromFile(string filePath)
 
 void runBenchMark(string encodingFilePath)
 {
-    cout << "AAA";
     vector<int> generationVariables = parseGenerationVariablesFromFile(encodingFilePath);
     void *solver = ipamir_init();
 
     int days = generationVariables[0];
     int hours = generationVariables[1];
-    int classRooms = generationVariables[2];
+    int rooms = generationVariables[2];
     int courses = generationVariables[3];
     int courseHours = generationVariables[4];
 
-    int timeSlots = days * hours;
-    int totalCourseHours = courses * courseHours;
+    int periods = days * hours;
+    int classes = courses * courseHours;
 
-    cout << "Creating clauses for " << courseHours << " course hours with " << timeSlots << " available timeslots and " << classRooms << " classrooms.\n";
+    if (verbose)
+        cout << "[VERBOSE] Creating clauses for " << classes << " classes with " << periods << " time periods and " << rooms << " rooms.\n";
 
-    //
+    // Represents class period assignments
+    vector<vector<int>> t(classes);
+    // Represents class room assignments
+    vector<vector<int>> r(classes);
 
-    /*
-    Literals indicate whether a class is held in a specified room in a specified timeslot
-    Constraints:
-    1. Two classes can't have the same room
-    2. Every class must have a classroom
-    */
-
-    cout << "Creating clauses for " << courseHours << " hours per course ("
-         << totalCourseHours << " course-hours total) with "
-         << timeSlots << " available timeslots and "
-         << classRooms << " classrooms.\n";
-
-    // Create 3D vector of literals:
-    vector<vector<vector<int>>> literals;
-    literals.resize((size_t)totalCourseHours);
     int literalCounter = 1;
-    for (long long c = 0; c < totalCourseHours; c++)
+
+    // Initialize t
+    for (long long i = 0; i < classes; i++)
     {
-        literals[(size_t)c].resize((size_t)classRooms);
-        for (int r = 0; r < classRooms; r++)
-        {
-            literals[(size_t)c][r].resize((size_t)timeSlots);
-            for (int t = 0; t < timeSlots; t++)
-            {
-                if (verbose)
-                {
-                    cout << "[VERBOSE] Creating literal " << literalCounter
-                         << " for courseHour=" << c << " room=" << r << " timeslot=" << t << "\n";
-                }
-                literals[(size_t)c][r][t] = literalCounter++;
-            }
-        }
-    }
-
-    long long vars = (long long)literalCounter - 1;
-    if (verbose)
-        cout << "[VERBOSE] Total variables (literals) = " << vars << "\n";
-
-    // Clause vectors
-    vector<vector<int>> mustHaveRoomClauses;
-    vector<vector<int>> atMostOneClauses;
-    vector<vector<int>> roomConflictClauses;
-
-    // Build must-have clauses: for each course-hour, at least one (room,timeslot)
-    mustHaveRoomClauses.reserve((size_t)totalCourseHours);
-    for (long long c = 0; c < totalCourseHours; c++)
-    {
-        vector<int> clause;
-        clause.reserve((size_t)classRooms * (size_t)timeSlots);
-        for (int r = 0; r < classRooms; r++)
-        {
-            for (int t = 0; t < timeSlots; t++)
-            {
-                clause.push_back(literals[(size_t)c][r][t]); // positive literal
-            }
-        }
-        mustHaveRoomClauses.push_back(std::move(clause));
-    }
-
-    // Build at-most-one clauses: for each course-hour, pairwise negative literals
-    // (i.e., a single course-hour cannot occupy two different room-timeslot literals)
-    atMostOneClauses.reserve((size_t)totalCourseHours * 10); // soft reserve; may grow more
-    for (long long c = 0; c < totalCourseHours; c++)
-    {
-        // flatten this course-hour's literals to a vector to produce pairs
-        vector<int> flat;
-        flat.reserve((size_t)classRooms * (size_t)timeSlots);
-        for (int r = 0; r < classRooms; r++)
-        {
-            for (int t = 0; t < timeSlots; t++)
-            {
-                flat.push_back(literals[(size_t)c][r][t]);
-            }
-        }
-        for (size_t i = 0; i < flat.size(); ++i)
-        {
-            for (size_t j = i + 1; j < flat.size(); ++j)
-            {
-                atMostOneClauses.push_back(vector<int>{-flat[i], -flat[j]});
-            }
-        }
-    }
-
-    // Build room conflict clauses: two DIFFERENT course-hours cannot occupy same room AND timeslot
-    // For each pair of different course-hours (a,b), and for each (room, timeslot): (-litA OR -litB)
-    roomConflictClauses.reserve((size_t)((totalCourseHours * (totalCourseHours - 1) / 2) * classRooms * timeSlots / 10 + 1));
-    for (long long a = 0; a < totalCourseHours; a++)
-    {
-        for (long long b = a + 1; b < totalCourseHours; b++)
-        {
-            for (int r = 0; r < classRooms; r++)
-            {
-                for (int t = 0; t < timeSlots; t++)
-                {
-                    int litA = literals[(size_t)a][r][t];
-                    int litB = literals[(size_t)b][r][t];
-                    roomConflictClauses.push_back(vector<int>{-litA, -litB});
-                }
-            }
-        }
-    }
-
-    // Count clauses
-    long long clauseCount = 0;
-    clauseCount += (long long)mustHaveRoomClauses.size();
-    clauseCount += (long long)atMostOneClauses.size();
-    clauseCount += (long long)roomConflictClauses.size();
-
-    // Output in DIMACS CNF format
-    if (verbose)
-        cout << "[VERBOSE] p cnf " << vars << " " << clauseCount << "\n";
-
-    // print must-have (positive) clauses and add to ipamir
-    for (const auto &cl : mustHaveRoomClauses)
-    {
-        for (int lit : cl)
-        {
-            if (verbose)
-                cout << "[VERBOSE]";
-            if (verbose)
-                cout << lit << " ";
-            ipamir_add_hard(solver, lit);
-        }
-        ipamir_add_hard(solver, 0);
+        int initialLiteralCounter = literalCounter;
+        vector<int> periodAssignment(periods);
+        iota(periodAssignment.begin(), periodAssignment.end(), literalCounter);
+        t[i] = periodAssignment;
+        literalCounter += periods;
         if (verbose)
-            cout << "0\n";
-    }
-
-    // print at-most-one clauses and add to ipamir
-    for (const auto &cl : atMostOneClauses)
-    {
-        if (verbose)
-            cout << "[VERBOSE]";
-        for (int lit : cl)
         {
-            if (verbose)
-                cout << lit << " ";
-            ipamir_add_hard(solver, lit);
+            cout << "[VERBOSE] Created literals " << initialLiteralCounter << "-" << literalCounter - 1
+                 << " in t for class " << i << "\n";
         }
-        ipamir_add_hard(solver, 0);
-        if (verbose)
-            cout << "0\n";
-    }
-
-    // print room conflict clauses and add to ipamir
-    for (const auto &cl : roomConflictClauses)
-    {
-        if (verbose)
-            cout << "[VERBOSE]";
-
-        for (int lit : cl)
-        {
-            if (verbose)
-                cout << lit << " ";
-            ipamir_add_hard(solver, lit);
-        }
-        ipamir_add_hard(solver, 0);
-        if (verbose)
-            cout << "0\n";
     }
 
     if (verbose)
     {
-        cout << "[VERBOSE] Clauses: mustHave=" << mustHaveRoomClauses.size()
-             << " atMostOne=" << atMostOneClauses.size()
-             << " roomConflicts=" << roomConflictClauses.size()
-             << " total=" << clauseCount << "\n";
+        cout << "[VERBOSE] literalCounter:" << literalCounter << "\n";
+    }
+
+    // Initialize r
+    for (long long i = 0; i < classes; i++)
+    {
+        int initialLiteralCounter = literalCounter;
+        vector<int> roomAssignment(rooms);
+        iota(roomAssignment.begin(), roomAssignment.end(), literalCounter);
+        r[i] = roomAssignment;
+        literalCounter += rooms;
+        if (verbose)
+        {
+            cout << "[VERBOSE] Created literals " << initialLiteralCounter << "-" << literalCounter - 1
+                 << " in r for class " << i << "\n";
+        }
+    }
+
+    if (verbose)
+    {
+        cout << "[VERBOSE] literalCounter:" << literalCounter << "\n";
+    }
+
+    vector<vector<int>> periodAssigned;
+    vector<vector<int>> roomAssigned;
+
+    for (long long i = 0; i < classes; i++)
+    {
+        vector<int> periodLiterals = t[i];
+        periodAssigned.push_back(periodLiterals);
+
+        vector<int> roomLiterals = r[i];
+        roomAssigned.push_back(roomLiterals);
+    }
+
+    if (verbose)
+    {
+        cout << "[VERBOSE] periodAssigned: \n";
+        for (long long i = 0; i < classes; i++)
+        {
+
+            for (long long i2 = 0; i2 < periods; i2++)
+            {
+                cout << "[" << periodAssigned[i][i2] << "]";
+            }
+            cout << "\n";
+        }
+
+        cout << "[VERBOSE] roomAssigned: \n";
+        for (long long i = 0; i < classes; i++)
+        {
+            for (long long i2 = 0; i2 < rooms; i2++)
+            {
+                cout << "[" << roomAssigned[i][i2] << "]";
+            }
+            cout << "\n";
+        }
+    }
+
+    for (long long i = 0; i < classes; i++)
+    {
+        for (long long i2 = 0; i2 < periods; i2++)
+        {
+            int lit = t[i][i2];
+            ipamir_add_hard(solver, lit);
+        }
+        ipamir_add_hard(solver, 0);
+    }
+
+    for (long long i = 0; i < classes; i++)
+    {
+
+        for (long long i2 = 0; i2 < rooms; i2++)
+        {
+            int lit = r[i][i2];
+            ipamir_add_hard(solver, lit);
+        }
+        ipamir_add_hard(solver, 0);
     }
 
     cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -253,26 +185,30 @@ void runBenchMark(string encodingFilePath)
         if (code == 30)
         {
             cout << "Assignment:\n";
-            for (int i = 0; i < totalCourseHours; i++)
+            for (int i = 0; i < classes; i++)
             {
-                for (int i2 = 0; i2 < classRooms; i2++)
+                int period;
+                int room;
+                for (int i2; i2 < periods; i2++)
                 {
-                    for (int i3 = 0; i3 < timeSlots; i3++)
+                    int periodLit = t[i][i2];
+                    if (ipamir_val_lit(solver, periodLit))
                     {
-                        int literal = literals[i][i2][i3];
-                        int literal_assignment = ipamir_val_lit(solver, literal);
-                        if (literal_assignment > 0)
-                        {
-                            cout << "Coursehour " << i << " assigned to classroom " << i2 << " at timeslot " << i3 << "\n";
-                        }
+                        period = i2;
+                        break;
                     }
                 }
-                if (verbose)
+
+                for (int i2; i2 < rooms; i2++)
                 {
-                    cout << "Full assignment:\n";
-                    int lit_assignment = ipamir_val_lit(solver, i);
-                    cout << lit_assignment << "\n";
+                    int roomLit = t[i][i2];
+                    if (ipamir_val_lit(solver, roomLit))
+                    {
+                        room = i2;
+                        break;
+                    }
                 }
+                cout << "Class " << i << " is assigned to room " << room << " in period " << period << "\n";
             }
         }
 
