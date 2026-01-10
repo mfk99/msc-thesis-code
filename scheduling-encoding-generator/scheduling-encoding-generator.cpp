@@ -263,12 +263,13 @@ string getFilePath()
         auto timeStamp = std::chrono::system_clock::now();
         std::time_t timeStamp_time = std::chrono::system_clock::to_time_t(timeStamp);
         string timeStampString = std::ctime(&timeStamp_time);
-        timeStampString = timeStampString.substr(4, timeStampString.size() - 9);
+        timeStampString = timeStampString.substr(4, timeStampString.size() - 5);
         timeStampString[3] = '-';
         timeStampString[6] = '-';
         timeStampString[15] = '-';
         timeStampString.erase(std::remove_if(timeStampString.begin(), timeStampString.end(), ::isspace), timeStampString.end());
-        string encodingFilePath = directoryPath + "/" + timeStampString + "timetableEncoding.cnf";
+        std::replace(timeStampString.begin(), timeStampString.end(), ':', '-');
+        string encodingFilePath = directoryPath + "/" + timeStampString + "-timetableEncoding.cnf";
         filePath = encodingFilePath;
     }
     return filePath;
