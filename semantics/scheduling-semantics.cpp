@@ -237,8 +237,8 @@ void runBenchMark(string encodingFilePath)
             cout << "Assignment:\n";
             for (int i = 0; i < classes; i++)
             {
-                int period;
-                int room;
+                int period = 0;
+                int room = 0;
                 for (int i2 = 0; i2 < periods; i2++)
                 {
                     int periodLit = t[i][i2];
