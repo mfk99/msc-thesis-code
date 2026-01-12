@@ -50,6 +50,13 @@ vector<int> parseGenerationVariablesFromFile(string filePath)
     return generationVariables;
 }
 
+void ipamirClauseCollector(int lit, void *solver)
+{
+    if (verbose)
+        cout << "[VERBOSE] Adding:" << lit << " to solver \n";
+    ipamir_add_hard(solver, lit);
+}
+
 void runBenchMark(string encodingFilePath)
 {
     vector<int> generationVariables = parseGenerationVariablesFromFile(encodingFilePath);
@@ -171,9 +178,52 @@ void runBenchMark(string encodingFilePath)
         ipamir_add_hard(solver, 0);
     }
 
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    // Print answer and ask user for input
+    // Encode am1 period pairwise constraints
+    for (long long i = 0; i < classes; i++)
+    {
+        Pairwise *pairwise = pairwise_new();
+        for (long long i2 = 0; i2 < periods; i2++)
+        {
+            int lit = t[i][i2];
+            pairwise_add(pairwise, lit);
+        }
+        pairwise_encode(pairwise, 0, ipamirClauseCollector, solver);
+        pairwise_drop(pairwise);
+    }
 
+    // Encode am1 room pairwise constraints
+    for (long long i = 0; i < classes; i++)
+    {
+        Pairwise *pairwise = pairwise_new();
+        for (long long i2 = 0; i2 < rooms; i2++)
+        {
+            int lit = r[i][i2];
+            pairwise_add(pairwise, lit);
+        }
+        pairwise_encode(pairwise, 0, ipamirClauseCollector, solver);
+        pairwise_drop(pairwise);
+    }
+
+    // Encode RoomConflict constraints
+    for (long long class1 = 0; class1 < classes; class1++)
+    {
+        for (long long class2 = class1 + 1; class2 < classes; class2++)
+        {
+            for (long long period = 0; period < periods; period++)
+            {
+                for (long long room = 0; room < rooms; room++)
+                {
+                    ipamir_add_hard(solver, -t[class1][period]);
+                    ipamir_add_hard(solver, -t[class2][period]);
+                    ipamir_add_hard(solver, -r[class1][room]);
+                    ipamir_add_hard(solver, -r[class2][room]);
+                    ipamir_add_hard(solver, 0);
+                }
+            }
+        }
+    }
+
+    // Print answer and ask user for input
     while (true)
     {
         std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
@@ -189,22 +239,26 @@ void runBenchMark(string encodingFilePath)
             {
                 int period;
                 int room;
-                for (int i2; i2 < periods; i2++)
+                for (int i2 = 0; i2 < periods; i2++)
                 {
                     int periodLit = t[i][i2];
-                    if (ipamir_val_lit(solver, periodLit))
+                    if (0 < ipamir_val_lit(solver, periodLit))
                     {
                         period = i2;
+                        if (verbose)
+                            cout << "[VERBOSE] periodLit:" << periodLit << "=1 \n";
                         break;
                     }
                 }
 
-                for (int i2; i2 < rooms; i2++)
+                for (int i2 = 0; i2 < rooms; i2++)
                 {
-                    int roomLit = t[i][i2];
-                    if (ipamir_val_lit(solver, roomLit))
+                    int roomLit = r[i][i2];
+                    if (0 < ipamir_val_lit(solver, roomLit))
                     {
                         room = i2;
+                        if (verbose)
+                            cout << "[VERBOSE] roomLit:" << roomLit << "=1 \n";
                         break;
                     }
                 }
@@ -222,7 +276,7 @@ void runBenchMark(string encodingFilePath)
         {
             if (verbose)
             {
-                cout << "Adding literal " << lit << "\n";
+                cout << "[VERBOSE] Adding literal " << lit << "\n";
             }
             ipamir_add_hard(solver, lit);
         }
