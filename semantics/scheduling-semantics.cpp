@@ -223,6 +223,30 @@ void runBenchMark(string encodingFilePath)
         }
     }
 
+    // Encode Precedence constraints
+    // TODO: Make classes into seperate vectors and adjust accordingly
+    for (long long i = 0; i <= courses; i++)
+    {
+        for (long long i2 = i + 1; i2 % courses != 0; i2++)
+        {
+            for (long long i3 = 0; i3 < classes; i3++)
+            {
+                int timing1Lit = t[i][i3];
+                for (long long i4 = 0; i4 < i3; i4++)
+                {
+                    int timing2Lit = t[i2][i4];
+                    if (verbose)
+                        cout << "[VERBOSE] Adding precedence constraint: -" << timing1Lit << ", -" << timing2Lit << ", 0 \n";
+                    ipamir_add_hard(solver, -timing1Lit);
+                    ipamir_add_hard(solver, -timing2Lit);
+                    ipamir_add_hard(solver, 0);
+                }
+            }
+        }
+    }
+
+    // TODO (?): Add config file generation and parsing
+
     // Print answer and ask user for input
     while (true)
     {
