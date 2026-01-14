@@ -244,6 +244,29 @@ void runBenchMark(string encodingFilePath)
         }
     }
 
+    // Encode SameRoom constraints
+    for (long long i = 0; i <= courses; i++)
+    {
+        for (long long i2 = i + 1; i2 % courses != 0; i2++)
+        {
+            for (long long i3 = 0; i3 < rooms; i3++)
+            {
+                int room1Lit = r[i][i3];
+                for (long long i4 = 0; i4 < rooms; i4++)
+                {
+                    if (i3 == i4)
+                        continue;
+                    int room2Lit = r[i2][i4];
+                    if (verbose)
+                        cout << "[VERBOSE] Adding SameRoom constraint: -" << room1Lit << ", -" << room2Lit << ", 0 \n";
+                    ipamir_add_hard(solver, -room1Lit);
+                    ipamir_add_hard(solver, -room2Lit);
+                    ipamir_add_hard(solver, 0);
+                }
+            }
+        }
+    }
+
     // TODO (?): Add config file generation and parsing
 
     // Print answer and ask user for input
