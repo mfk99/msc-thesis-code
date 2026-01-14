@@ -1,10 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <limits>
 #include <string>
 #include <chrono>
-#include <bits/stdc++.h>
+#include <numeric>
 #include "../input-parser/input-parser.h"
 #include "../../../ipamir.h"
 #include "../../../rustsat/capi/rustsat.h"
