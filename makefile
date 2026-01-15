@@ -1,11 +1,12 @@
 TARGET = output
 OBJ_DIR = build
 
-SRCS = index.cpp semantics/scheduling-semantics.cpp input-parser/input-parser.cpp scheduling-encoding-generator/scheduling-encoding-generator.cpp
+SRCS = index.cpp semantics/scheduling-semantics.cpp input-parser/input-parser.cpp scheduling-encoding-generator/scheduling-encoding-generator.cpp config/config.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 CXX = g++
 CXXFLAGS ?= -Wall -DNDEBUG -O3 -std=c++17
+CXXFLAGS += -I/usr/include
 
 IPAMIRSOLVER ?= solver2022
 IPASIRSOLVER ?= minisat220
@@ -17,6 +18,7 @@ LIBS += $(shell cat ../../maxsat/$(IPAMIRSOLVER)/LIBS 2>/dev/null)
 LIBS += $(shell cat ../../maxsat/$(IPASIRSOLVER)/LIBS 2>/dev/null)
 LIBS += $(RUSTSAT)
 LIBS += -ldl -lpthread -lm
+LIBS += -ljsoncpp
 
 all: $(TARGET)
 

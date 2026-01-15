@@ -5,6 +5,7 @@
 #include <chrono>
 #include <numeric>
 #include "../input-parser/input-parser.h"
+#include "../config/config.h"
 #include "../../../ipamir.h"
 #include "../../../rustsat/capi/rustsat.h"
 using namespace std;
@@ -26,29 +27,6 @@ vector<int> parseUserClauseInput(string input)
     return clauseLiterals;
 }
 
-vector<int> parseGenerationVariablesFromFile(string filePath)
-{
-    vector<int> generationVariables;
-    string s;
-
-    // Read from the text file
-    ifstream readStream(filePath);
-    for (int i = 0; i < 5; i++)
-    {
-        getline(readStream, s);
-        size_t pos = s.find(" ");
-        if (pos != string::npos)
-        {
-            string valueStr = s.substr(pos + 1);
-            int value = stoi(valueStr);
-            generationVariables.push_back(value);
-        }
-    }
-    readStream.close();
-
-    return generationVariables;
-}
-
 void ipamirClauseCollector(int lit, void *solver)
 {
     if (verbose)
@@ -56,10 +34,9 @@ void ipamirClauseCollector(int lit, void *solver)
     ipamir_add_hard(solver, lit);
 }
 
-void runBenchMark(string encodingFilePath)
+void runBenchMark()
 {
-    vector<int> generationVariables = parseGenerationVariablesFromFile(encodingFilePath);
-    void *solver = ipamir_init();
+    vector<int> generationVariables = readConfig();
 
     int days = generationVariables[0];
     int hours = generationVariables[1];
@@ -69,6 +46,8 @@ void runBenchMark(string encodingFilePath)
 
     int periods = days * hours;
     int classes = courses * courseHours;
+
+    void *solver = ipamir_init();
 
     if (verbose)
         cout << "[VERBOSE] Creating clauses for " << classes << " classes with " << periods << " time periods and " << rooms << " rooms.\n";
@@ -168,7 +147,6 @@ void runBenchMark(string encodingFilePath)
 
     for (long long i = 0; i < classes; i++)
     {
-
         for (long long i2 = 0; i2 < rooms; i2++)
         {
             int lit = r[i][i2];
@@ -267,11 +245,10 @@ void runBenchMark(string encodingFilePath)
         }
     }
 
-    // TODO (?): Add config file generation and parsing
-
     // Print answer and ask user for input
     while (true)
     {
+        // TODO: Write encoding to file based on generate-variable
         std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         int code = ipamir_solve(solver);
         std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();

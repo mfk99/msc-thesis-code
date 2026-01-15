@@ -3,6 +3,7 @@
 #include <string>
 
 extern unsigned short verbose;
+extern unsigned short initialize;
 extern unsigned short generate;
 extern unsigned short execute;
 extern std::string filePath;

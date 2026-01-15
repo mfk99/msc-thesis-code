@@ -4,6 +4,7 @@
 using namespace std;
 
 unsigned short verbose = 0;
+unsigned short initialize = 0;
 unsigned short generate = 0;
 unsigned short execute = 0;
 
@@ -18,6 +19,11 @@ void parseInput(int argc, char **argv)
         {
             cout << "Verbose mode enabled \n";
             verbose = 1;
+        }
+        if (str == "-i")
+        {
+            cout << "Config initialization enabled \n";
+            initialize = 1;
         }
         if (str == "-g")
         {
@@ -46,6 +52,7 @@ void printHelp()
     cout << "Instructions: \n";
     cout << "----------------- \n";
     cout << "-v Enable verbose logging, disabled by default \n";
+    cout << "-i Enable config initialization, disabled by default \n";
     cout << "-g Enable encoding generation, disabled by default \n";
     cout << "-e Enable encoding execution, disabled by default \n";
     cout << "----------------- \n";
@@ -62,7 +69,7 @@ vector<int> parseEncodingGenerationVariables(int argc, char **argv)
     4. courses
     5. courseHours
     */
-    int i = 1 + verbose + generate + execute;
+    int i = 1 + verbose + initialize + generate + execute;
     int i2 = i + 5;
     for (; i < i2; i++)
     {
