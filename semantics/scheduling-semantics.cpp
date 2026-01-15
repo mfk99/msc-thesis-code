@@ -36,7 +36,7 @@ void ipamirClauseCollector(int lit, void *solver)
 
 void runBenchMark()
 {
-    vector<int> generationVariables = readConfig();
+    vector<int> generationVariables = getConfigVariables();
 
     int days = generationVariables[0];
     int hours = generationVariables[1];
@@ -195,6 +195,32 @@ void runBenchMark()
                     ipamir_add_hard(solver, -r[class1][room]);
                     ipamir_add_hard(solver, -r[class2][room]);
                     ipamir_add_hard(solver, 0);
+                }
+            }
+        }
+    }
+
+    // Encode RoomUnavailability constraints
+    vector<vector<vector<int>>> roomAvailability = getRoomAvailability();
+    for (int i = 0; i < rooms; i++)
+    {
+        for (int i2 = 0; i2 < days; i2++)
+        {
+            for (int i3 = 0; i3 < hours; i3++)
+            {
+                if (!roomAvailability[i][i2][i3])
+                {
+                    for (int i4 = 0; i4 < classes; i4++)
+                    {
+                        int periodIndex = i2 * courseHours + i3;
+                        int timingLit = t[i4][periodIndex];
+                        int roomLit = r[i4][i];
+                        if (verbose)
+                            cout << "[VERBOSE] Adding RoomUnavailability constraint: -" << timingLit << ", -" << roomLit << ", 0 \n";
+                        ipamir_add_hard(solver, -timingLit);
+                        ipamir_add_hard(solver, -roomLit);
+                        ipamir_add_hard(solver, 0);
+                    }
                 }
             }
         }

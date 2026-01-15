@@ -9,35 +9,53 @@ using namespace std;
 
 void generateConfig(vector<int> configVariables)
 {
-    Json::Value configData;
+    Json::Value root;
     int rooms = configVariables[0];
     int courseHours = configVariables[1];
     int courses = configVariables[2];
     int days = configVariables[3];
     int hours = configVariables[4];
 
-    configData["rooms"] = rooms;
-    configData["courseHours"] = courseHours;
-    configData["courses"] = courses;
-    configData["days"] = days;
-    configData["hours"] = hours;
+    root["rooms"] = rooms;
+    root["courseHours"] = courseHours;
+    root["courses"] = courses;
+    root["days"] = days;
+    root["hours"] = hours;
+
+    Json::Value roomAvailability(Json::arrayValue);
+    for (int i = 0; i < rooms; i++)
+    {
+
+        Json::Value plane(Json::arrayValue);
+        for (int i2 = 0; i2 < days; i2++)
+        {
+            Json::Value row(Json::arrayValue);
+            for (int i3 = 0; i3 < hours; i3++)
+            {
+                row.append(1);
+            }
+            plane.append(row);
+        }
+        roomAvailability.append(plane);
+    }
+
+    root["roomAvailability"] = roomAvailability;
 
     string path = filePath;
     std::ofstream configFile(path);
     Json::StreamWriterBuilder writer;
     writer["indentation"] = "    ";
     Json::StreamWriter *jsonWriter = writer.newStreamWriter();
-    jsonWriter->write(configData, &configFile);
+    jsonWriter->write(root, &configFile);
     configFile.close();
 }
 
-vector<int> readConfig()
+vector<int> getConfigVariables()
 {
     string path = filePath;
     std::ifstream configFile(filePath, std::ifstream::binary);
     Json::Value config;
     configFile >> config;
-    cout << config << "\n";
 
     vector<int> configVariables;
     int days = config["days"].asInt();
@@ -51,4 +69,30 @@ vector<int> readConfig()
     configVariables.push_back(courses);
     configVariables.push_back(courseHours);
     return configVariables;
+}
+
+vector<vector<vector<int>>> getRoomAvailability()
+{
+    string path = filePath;
+    std::ifstream configFile(filePath, std::ifstream::binary);
+    Json::Value config;
+    configFile >> config;
+
+    vector<vector<vector<int>>> roomAvailability;
+    const Json::Value &jsonArray = config["roomAvailability"];
+    for (const Json::Value &plane : jsonArray)
+    {
+        vector<vector<int>> room;
+        for (const Json::Value &row : plane)
+        {
+            vector<int> dayHours;
+            for (const Json::Value &hour : row)
+            {
+                dayHours.push_back(hour.asInt());
+            }
+            room.push_back(dayHours);
+        }
+        roomAvailability.push_back(room);
+    }
+    return roomAvailability;
 }

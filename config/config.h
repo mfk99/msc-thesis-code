@@ -3,4 +3,5 @@
 #include <vector>
 
 void generateConfig(std::vector<int> configVariables);
-std::vector<int> readConfig();
+std::vector<int> getConfigVariables();
+std::vector<std::vector<std::vector<int>>> getRoomAvailability();
