@@ -38,14 +38,15 @@ void runBenchMark()
 {
     vector<int> generationVariables = getConfigVariables();
 
-    int days = generationVariables[0];
-    int hours = generationVariables[1];
-    int rooms = generationVariables[2];
-    int courses = generationVariables[3];
-    int courseHours = generationVariables[4];
+    int weeks = generationVariables[0];
+    int days = generationVariables[1];
+    int hours = generationVariables[2];
+    int rooms = generationVariables[3];
+    int courses = generationVariables[4];
+    int courseHours = generationVariables[5];
 
     int periods = days * hours;
-    int classes = courses * courseHours;
+    int classes = weeks * courses * courseHours;
 
     void *solver = ipamir_init();
 
@@ -77,6 +78,30 @@ void runBenchMark()
     if (verbose)
     {
         cout << "[VERBOSE] literalCounter:" << literalCounter << "\n";
+    }
+
+    int periodLiteralCounter = literalCounter;
+    vector<vector<vector<vector<int>>>> periodLiterals;
+    for (long long i = 0; i < weeks; i++)
+    {
+        vector<vector<vector<int>>> weekLiterals;
+        for (long long i2 = 0; i2 < days; i2++)
+        {
+            vector<vector<int>> dayLiterals;
+            for (long long i3 = 0; i3 < hours; i3++)
+            {
+                vector<int> hourLiterals;
+                for (long long i4 = 0; i4 < rooms; i4++)
+                {
+                    hourLiterals.push_back(periodLiteralCounter);
+                    cout << "periodLiteralCounter:" << periodLiteralCounter << "\n";
+                    periodLiteralCounter++;
+                }
+                dayLiterals.push_back(hourLiterals);
+            }
+            weekLiterals.push_back(dayLiterals);
+        }
+        periodLiterals.push_back(weekLiterals);
     }
 
     // Initialize r

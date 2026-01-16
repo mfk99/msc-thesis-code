@@ -63,14 +63,15 @@ vector<int> parseEncodingGenerationVariables(int argc, char **argv)
     vector<int> userVariables;
     /*
     Arguments are give in the following order:
-    1. days
-    2. hours
-    3. classRooms
-    4. courses
-    5. courseHours
+    1. weeks
+    2. days
+    3. hours
+    4. classRooms
+    5. courses
+    6. courseHours
     */
     int i = 1 + verbose + initialize + generate + execute;
-    int i2 = i + 5;
+    int i2 = i + 6;
     for (; i < i2; i++)
     {
         userVariables.push_back(atoi(argv[i]));

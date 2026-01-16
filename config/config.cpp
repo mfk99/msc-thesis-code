@@ -10,17 +10,20 @@ using namespace std;
 void generateConfig(vector<int> configVariables)
 {
     Json::Value root;
-    int rooms = configVariables[0];
-    int courseHours = configVariables[1];
-    int courses = configVariables[2];
-    int days = configVariables[3];
-    int hours = configVariables[4];
 
-    root["rooms"] = rooms;
-    root["courseHours"] = courseHours;
-    root["courses"] = courses;
+    int weeks = configVariables[0];
+    int days = configVariables[1];
+    int hours = configVariables[2];
+    int rooms = configVariables[3];
+    int courses = configVariables[4];
+    int courseHours = configVariables[5];
+
+    root["weeks"] = weeks;
     root["days"] = days;
     root["hours"] = hours;
+    root["rooms"] = rooms;
+    root["courses"] = courses;
+    root["courseHours"] = courseHours;
 
     Json::Value roomAvailability(Json::arrayValue);
     for (int i = 0; i < rooms; i++)
@@ -41,6 +44,19 @@ void generateConfig(vector<int> configVariables)
 
     root["roomAvailability"] = roomAvailability;
 
+    Json::Value roomTravelTime(Json::arrayValue);
+    for (int i = 0; i < rooms; i++)
+    {
+        Json::Value row(Json::arrayValue);
+        for (int i2 = 0; i2 < rooms; i2++)
+        {
+            row.append(0);
+        }
+        roomTravelTime.append(row);
+    }
+
+    root["roomTravelTime"] = roomTravelTime;
+
     string path = filePath;
     std::ofstream configFile(path);
     Json::StreamWriterBuilder writer;
@@ -58,11 +74,13 @@ vector<int> getConfigVariables()
     configFile >> config;
 
     vector<int> configVariables;
+    int weeks = config["weeks"].asInt();
     int days = config["days"].asInt();
     int hours = config["hours"].asInt();
     int rooms = config["rooms"].asInt();
     int courses = config["courses"].asInt();
     int courseHours = config["courseHours"].asInt();
+    configVariables.push_back(weeks);
     configVariables.push_back(days);
     configVariables.push_back(hours);
     configVariables.push_back(rooms);
