@@ -45,7 +45,7 @@ void runBenchMark()
     int courses = generationVariables[4];
     int courseHours = generationVariables[5];
 
-    int periods = days * hours;
+    int periods = weeks * days * hours;
     int classes = weeks * courses * courseHours;
 
     void *solver = ipamir_init();
@@ -59,6 +59,36 @@ void runBenchMark()
     vector<vector<int>> r(classes);
 
     int literalCounter = 1;
+    int periodLiteralCounter = 1;
+
+    vector<vector<vector<vector<int>>>> periodLiterals; // Helper vector
+    //[week][course][day][hour]
+    for (long long i = 0; i < weeks; i++)
+    {
+        vector<vector<vector<int>>> weekLiterals;
+        for (long long i2 = 0; i2 < days; i2++)
+        {
+            vector<vector<int>> dayLiterals;
+            for (long long i3 = 0; i3 < hours; i3++)
+            {
+                vector<int> hourLiterals;
+                for (long long i4 = 0; i4 < courses; i4++)
+                {
+                    hourLiterals.push_back(periodLiteralCounter);
+                    cout << "adding hourLiteral: " << periodLiteralCounter << "\n";
+                    for (long long i5 = 0; i5 < rooms; i5++)
+                    {
+                        periodLiteralCounter++;
+                    }
+                }
+                dayLiterals.push_back(hourLiterals);
+            }
+            weekLiterals.push_back(dayLiterals);
+        }
+        periodLiterals.push_back(weekLiterals);
+    }
+    cout << "periodLiterals[0][0][0][0]: " << periodLiterals[0][0][0][0] << "\n";
+    cout << "periodLiterals[0][1][1][1]: " << periodLiterals[0][1][1][1] << "\n";
 
     // Initialize t
     for (long long i = 0; i < classes; i++)
@@ -78,30 +108,6 @@ void runBenchMark()
     if (verbose)
     {
         cout << "[VERBOSE] literalCounter:" << literalCounter << "\n";
-    }
-
-    int periodLiteralCounter = literalCounter;
-    vector<vector<vector<vector<int>>>> periodLiterals;
-    for (long long i = 0; i < weeks; i++)
-    {
-        vector<vector<vector<int>>> weekLiterals;
-        for (long long i2 = 0; i2 < days; i2++)
-        {
-            vector<vector<int>> dayLiterals;
-            for (long long i3 = 0; i3 < hours; i3++)
-            {
-                vector<int> hourLiterals;
-                for (long long i4 = 0; i4 < rooms; i4++)
-                {
-                    hourLiterals.push_back(periodLiteralCounter);
-                    cout << "periodLiteralCounter:" << periodLiteralCounter << "\n";
-                    periodLiteralCounter++;
-                }
-                dayLiterals.push_back(hourLiterals);
-            }
-            weekLiterals.push_back(dayLiterals);
-        }
-        periodLiterals.push_back(weekLiterals);
     }
 
     // Initialize r
@@ -251,8 +257,48 @@ void runBenchMark()
         }
     }
 
+    //[week][course][day][hour]
+    // Encode SameStart constraints
+
+    for (long long course = 0; course < courses; course++)
+    {
+        for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
+        {
+            for (long long week1 = 0; week1 < weeks; week1++)
+            {
+                for (long long day1 = 0; day1 < days; day1++)
+                {
+                    for (long long hour1 = 0; hour1 < hours; hour1++)
+                    {
+                        int periodLiteral1 = periodLiterals[week1][course][day1][hour1] + courseHour1;
+                        cout << "week1:" << week1 << ", course:" << course << ", day1:" << day1 << ", hour1:" << hour1 << "\n";
+                        cout << "periodLiteral1: " << periodLiteral1 << "\n";
+
+                        for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHours; courseHour2++)
+                        {
+                            for (long long week2 = week1; week2 < weeks; week2++) // TODO: Add +1 after implementing week logic
+                            {
+                                for (long long day2 = day1 + 1; day2 < days; day2++)
+                                {
+                                    for (long long hour2 = hour1 + 1; hour2 < hours; hour2++)
+                                    {
+                                        int periodLiteral2 = periodLiterals[week2][course][day2][hour2] + courseHour2;
+                                        if (verbose)
+                                            cout << "[VERBOSE] Adding SameStart constraint: -" << periodLiteral1 << ", -" << periodLiteral2 << ", 0 \n";
+                                        ipamir_add_hard(solver, -periodLiteral1);
+                                        ipamir_add_hard(solver, -periodLiteral2);
+                                        ipamir_add_hard(solver, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Encode Precedence constraints
-    // TODO: Make classes into seperate vectors and adjust accordingly
     for (long long i = 0; i <= courses; i++)
     {
         for (long long i2 = i + 1; i2 % courses != 0; i2++)
