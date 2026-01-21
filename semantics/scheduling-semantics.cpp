@@ -30,8 +30,7 @@ vector<int> parseUserClauseInput(string input)
 void ipamirClauseCollector(int lit, void *solver)
 {
     if (verbose)
-        cout << "[VERBOSE] Adding:" << lit << " to solver \n";
-    ipamir_add_hard(solver, lit);
+        ipamir_add_hard(solver, lit);
 }
 
 void runBenchMark()
@@ -46,12 +45,15 @@ void runBenchMark()
     int courseHours = generationVariables[5];
 
     int periods = weeks * days * hours;
-    int classes = weeks * courses * courseHours;
+    int classes = courses * courseHours;
 
     void *solver = ipamir_init();
 
     if (verbose)
-        cout << "[VERBOSE] Creating clauses for " << classes << " classes with " << periods << " time periods and " << rooms << " rooms.\n";
+        cout << "[VERBOSE] Creating clauses for "
+             << classes << " classes with "
+             << periods << " time periods and "
+             << rooms << " rooms.\n";
 
     // Represents class period assignments
     vector<vector<int>> t(classes);
@@ -62,7 +64,7 @@ void runBenchMark()
     int periodLiteralCounter = 1;
 
     vector<vector<vector<vector<int>>>> periodLiterals; // Helper vector
-    //[week][course][day][hour]
+    //[course][week][day][hour]
     for (long long i = 0; i < weeks; i++)
     {
         vector<vector<vector<int>>> weekLiterals;
@@ -75,7 +77,8 @@ void runBenchMark()
                 for (long long i4 = 0; i4 < courses; i4++)
                 {
                     hourLiterals.push_back(periodLiteralCounter);
-                    cout << "adding hourLiteral: " << periodLiteralCounter << "\n";
+                    if (verbose)
+                        cout << "[VERBOSE] adding hourLiteral: " << periodLiteralCounter << "\n";
                     for (long long i5 = 0; i5 < rooms; i5++)
                     {
                         periodLiteralCounter++;
@@ -87,8 +90,6 @@ void runBenchMark()
         }
         periodLiterals.push_back(weekLiterals);
     }
-    cout << "periodLiterals[0][0][0][0]: " << periodLiterals[0][0][0][0] << "\n";
-    cout << "periodLiterals[0][1][1][1]: " << periodLiterals[0][1][1][1] << "\n";
 
     // Initialize t
     for (long long i = 0; i < classes; i++)
@@ -226,40 +227,49 @@ void runBenchMark()
                     ipamir_add_hard(solver, -r[class1][room]);
                     ipamir_add_hard(solver, -r[class2][room]);
                     ipamir_add_hard(solver, 0);
-                }
-            }
-        }
-    }
-
-    // Encode RoomUnavailability constraints
-    vector<vector<vector<int>>> roomAvailability = getRoomAvailability();
-    for (int i = 0; i < rooms; i++)
-    {
-        for (int i2 = 0; i2 < days; i2++)
-        {
-            for (int i3 = 0; i3 < hours; i3++)
-            {
-                if (!roomAvailability[i][i2][i3])
-                {
-                    for (int i4 = 0; i4 < classes; i4++)
+                    if (verbose)
                     {
-                        int periodIndex = i2 * courseHours + i3;
-                        int timingLit = t[i4][periodIndex];
-                        int roomLit = r[i4][i];
-                        if (verbose)
-                            cout << "[VERBOSE] Adding RoomUnavailability constraint: -" << timingLit << ", -" << roomLit << ", 0 \n";
-                        ipamir_add_hard(solver, -timingLit);
-                        ipamir_add_hard(solver, -roomLit);
-                        ipamir_add_hard(solver, 0);
+                        cout << "[VERBOSE] Adding RoomConflict constraint: "
+                             << -t[class1][period] << ", "
+                             << -t[class2][period] << ", "
+                             << -r[class1][room] << ", "
+                             << -r[class2][room] << ", 0 \n";
                     }
                 }
             }
         }
     }
 
-    //[week][course][day][hour]
-    // Encode SameStart constraints
+    // Encode RoomUnavailability constraints
+    vector<vector<vector<vector<int>>>> roomAvailability = getRoomAvailability();
+    for (int i = 0; i < rooms; i++)
+    {
+        for (int i2 = 0; i2 < weeks; i2++)
+        {
+            for (int i3 = 0; i3 < days; i3++)
+            {
+                for (int i4 = 0; i4 < hours; i4++)
+                {
+                    if (!roomAvailability[i][i2][i3][i4])
+                    {
+                        for (int i5 = 0; i5 < classes; i5++)
+                        {
+                            int periodIndex = i2 * courseHours + i3;
+                            int timingLit = t[i5][periodIndex];
+                            int roomLit = r[i5][i];
+                            if (verbose)
+                                cout << "[VERBOSE] Adding RoomUnavailability constraint: -" << timingLit << ", -" << roomLit << ", 0 \n";
+                            ipamir_add_hard(solver, -timingLit);
+                            ipamir_add_hard(solver, -roomLit);
+                            ipamir_add_hard(solver, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
+    // Encode SameStart constraints
     for (long long course = 0; course < courses; course++)
     {
         for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
@@ -270,23 +280,21 @@ void runBenchMark()
                 {
                     for (long long hour1 = 0; hour1 < hours; hour1++)
                     {
-                        int periodLiteral1 = periodLiterals[week1][course][day1][hour1] + courseHour1;
-                        cout << "week1:" << week1 << ", course:" << course << ", day1:" << day1 << ", hour1:" << hour1 << "\n";
-                        cout << "periodLiteral1: " << periodLiteral1 << "\n";
+                        int periodLit1 = periodLiterals[course][week1][day1][hour1] + courseHour1;
 
                         for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHours; courseHour2++)
                         {
-                            for (long long week2 = week1; week2 < weeks; week2++) // TODO: Add +1 after implementing week logic
+                            for (long long week2 = week1 + 1; week2 < weeks; week2++)
                             {
                                 for (long long day2 = day1 + 1; day2 < days; day2++)
                                 {
                                     for (long long hour2 = hour1 + 1; hour2 < hours; hour2++)
                                     {
-                                        int periodLiteral2 = periodLiterals[week2][course][day2][hour2] + courseHour2;
+                                        int periodLit2 = periodLiterals[course][week2][day2][hour2] + courseHour2;
                                         if (verbose)
-                                            cout << "[VERBOSE] Adding SameStart constraint: -" << periodLiteral1 << ", -" << periodLiteral2 << ", 0 \n";
-                                        ipamir_add_hard(solver, -periodLiteral1);
-                                        ipamir_add_hard(solver, -periodLiteral2);
+                                            cout << "[VERBOSE] Adding SameStart constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        ipamir_add_hard(solver, -periodLit1);
+                                        ipamir_add_hard(solver, -periodLit2);
                                         ipamir_add_hard(solver, 0);
                                     }
                                 }
@@ -299,16 +307,16 @@ void runBenchMark()
     }
 
     // Encode Precedence constraints
-    for (long long i = 0; i <= courses; i++)
+    for (long long courseHour1 = 0; courseHour1 <= courses; courseHour1 += courseHours)
     {
-        for (long long i2 = i + 1; i2 % courses != 0; i2++)
+        for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHours + courseHour1 * courseHours; courseHour2++)
         {
-            for (long long i3 = 0; i3 < classes; i3++)
+            for (long long period1 = 0; period1 < periods; period1++)
             {
-                int timing1Lit = t[i][i3];
-                for (long long i4 = 0; i4 < i3; i4++)
+                int timing1Lit = t[courseHour1][period1];
+                for (long long period2 = 0; period2 < period1; period2++)
                 {
-                    int timing2Lit = t[i2][i4];
+                    int timing2Lit = t[courseHour2][period2];
                     if (verbose)
                         cout << "[VERBOSE] Adding precedence constraint: -" << timing1Lit << ", -" << timing2Lit << ", 0 \n";
                     ipamir_add_hard(solver, -timing1Lit);

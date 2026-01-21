@@ -28,18 +28,22 @@ void generateConfig(vector<int> configVariables)
     Json::Value roomAvailability(Json::arrayValue);
     for (int i = 0; i < rooms; i++)
     {
-
-        Json::Value plane(Json::arrayValue);
-        for (int i2 = 0; i2 < days; i2++)
+        Json::Value roomDimension(Json::arrayValue);
+        for (int i2 = 0; i2 < weeks; i2++)
         {
-            Json::Value row(Json::arrayValue);
-            for (int i3 = 0; i3 < hours; i3++)
+            Json::Value weekDimensions(Json::arrayValue);
+            for (int i3 = 0; i3 < days; i3++)
             {
-                row.append(1);
+                Json::Value dayDimension(Json::arrayValue);
+                for (int i4 = 0; i4 < hours; i4++)
+                {
+                    dayDimension.append(1);
+                }
+                weekDimensions.append(dayDimension);
             }
-            plane.append(row);
+            roomDimension.append(weekDimensions);
         }
-        roomAvailability.append(plane);
+        roomAvailability.append(roomDimension);
     }
 
     root["roomAvailability"] = roomAvailability;
@@ -89,26 +93,31 @@ vector<int> getConfigVariables()
     return configVariables;
 }
 
-vector<vector<vector<int>>> getRoomAvailability()
+vector<vector<vector<vector<int>>>> getRoomAvailability()
 {
     string path = filePath;
     std::ifstream configFile(filePath, std::ifstream::binary);
     Json::Value config;
     configFile >> config;
 
-    vector<vector<vector<int>>> roomAvailability;
+    vector<vector<vector<vector<int>>>> roomAvailability;
     const Json::Value &jsonArray = config["roomAvailability"];
-    for (const Json::Value &plane : jsonArray)
+    for (const Json::Value &roomDimension : jsonArray)
     {
-        vector<vector<int>> room;
-        for (const Json::Value &row : plane)
+        vector<vector<vector<int>>> room;
+        for (const Json::Value &weekDimension : roomDimension)
         {
-            vector<int> dayHours;
-            for (const Json::Value &hour : row)
+            vector<vector<int>> week;
+            for (const Json::Value &row : weekDimension)
             {
-                dayHours.push_back(hour.asInt());
+                vector<int> dayHours;
+                for (const Json::Value &hour : row)
+                {
+                    dayHours.push_back(hour.asInt());
+                }
+                week.push_back(dayHours);
             }
-            room.push_back(dayHours);
+            room.push_back(week);
         }
         roomAvailability.push_back(room);
     }
