@@ -343,6 +343,43 @@ void runBenchMark()
         }
     }
 
+    // Encode SameWeeks constraints
+    for (long long course = 0; course < courses; course++)
+    {
+        for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
+        {
+            for (long long week1 = 0; week1 < weeks; week1++)
+            {
+                for (long long day1 = 0; day1 < days; day1++)
+                {
+                    for (long long hour1 = 0; hour1 < hours; hour1++)
+                    {
+                        int periodLit1 = periodLiterals[course][courseHour1][week1][day1] + hour1;
+
+                        for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHours; courseHour2++)
+                        {
+                            for (long long week2 = week1 + 1; week2 < weeks; week2++)
+                            {
+                                for (long long day2 = 0; day2 < days; day2++)
+                                {
+                                    for (long long hour2 = 0; hour2 < hours; hour2++)
+                                    {
+                                        int periodLit2 = periodLiterals[course][courseHour2][week2][day2] + hour2;
+                                        if (verbose)
+                                            cout << "[VERBOSE] Adding SameWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        ipamir_add_hard(solver, -periodLit1);
+                                        ipamir_add_hard(solver, -periodLit2);
+                                        ipamir_add_hard(solver, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Encode Precedence constraints
     for (long long courseHour1 = 0; courseHour1 <= courses; courseHour1 += courseHours)
     {
