@@ -309,7 +309,7 @@ void runBenchMark()
     // Encode Precedence constraints
     for (long long courseHour1 = 0; courseHour1 <= courses; courseHour1 += courseHours)
     {
-        for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHours + courseHour1 * courseHours; courseHour2++)
+        for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHour1 + courseHours; courseHour2++)
         {
             for (long long period1 = 0; period1 < periods; period1++)
             {
