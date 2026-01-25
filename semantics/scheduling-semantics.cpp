@@ -343,6 +343,45 @@ void runBenchMark()
         }
     }
 
+    // Encode WorkDay constraints
+    int maxWorkDayLength = hours - 1;
+    for (long long week = 0; week < weeks; week++)
+    {
+        for (long long day = 0; day < days; day++)
+        {
+            for (long long course1 = 0; course1 < courses; course1++)
+            {
+                for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
+                {
+                    for (long long hour1 = 0; hour1 < hours; hour1++)
+                    {
+                        int periodLit1 = periodLiterals[course1][courseHour1][week][day] + hour1;
+
+                        for (long long course2 = course1; course2 < courses; course2++)
+                        {
+                            for (long long courseHour2 = courseHour1; courseHour2 < courseHours; courseHour2++)
+                            {
+                                for (long long hour2 = hour1; hour2 < hours; hour2++)
+                                {
+                                    int periodLit2 = periodLiterals[course2][courseHour2][week][day] + hour2;
+                                    if (maxWorkDayLength <= (abs(hour1 - hour2)))
+                                    {
+                                        if (verbose)
+                                            cout
+                                                << "[VERBOSE] Adding WorkDay constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        ipamir_add_hard(solver, -periodLit1);
+                                        ipamir_add_hard(solver, -periodLit2);
+                                        ipamir_add_hard(solver, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Encode SameWeeks constraints
     for (long long course = 0; course < courses; course++)
     {
