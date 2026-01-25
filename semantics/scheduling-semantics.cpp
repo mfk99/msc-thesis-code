@@ -382,6 +382,45 @@ void runBenchMark()
         }
     }
 
+    // Encode NotOverLap constraints
+    for (long long week = 0; week < weeks; week++)
+    {
+        for (long long day = 0; day < days; day++)
+        {
+            for (long long hour = 0; hour < hours; hour++)
+            {
+                for (long long course1 = 0; course1 < courses; course1++)
+                {
+                    for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
+                    {
+                        int periodLit1 = periodLiterals[course1][courseHour1][week][day] + hour;
+
+                        for (long long course2 = course1; course2 < courses; course2++)
+                        {
+                            long long courseHour2;
+                            if (course2 == course1)
+                                courseHour2 = courseHour1;
+                            else
+                                courseHour2 = 0;
+                            for (; courseHour2 < courseHours; courseHour2++)
+                            {
+                                int periodLit2 = periodLiterals[course2][courseHour2][week][day] + hour;
+                                if (periodLit1 == periodLit2)
+                                    continue;
+                                if (verbose)
+                                    cout
+                                        << "[VERBOSE] Adding NotOverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                ipamir_add_hard(solver, -periodLit1);
+                                ipamir_add_hard(solver, -periodLit2);
+                                ipamir_add_hard(solver, 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Encode SameWeeks constraints
     for (long long course = 0; course < courses; course++)
     {
