@@ -6,8 +6,10 @@
 #include <numeric>
 #include "../input-parser/input-parser.h"
 #include "../config/config.h"
+#include "../am1/am1-encoder.h"
 #include "../../../ipamir.h"
 #include "../../../rustsat/capi/rustsat.h"
+
 using namespace std;
 using namespace RustSAT;
 
@@ -60,7 +62,7 @@ void runBenchMark()
     // Represents class room assignments
     vector<vector<int>> r(classes);
 
-    int literalCounter = 1;
+    uint32_t literalCounter = 1;
     int periodLiteralCounter = 1;
 
     vector<vector<vector<vector<int>>>> periodLiterals; // Helper vector
@@ -187,30 +189,44 @@ void runBenchMark()
         ipamir_add_hard(solver, 0);
     }
 
-    // Encode am1 period pairwise constraints
+    string am1EncoderType = "pairwise";
+
+    // Encode am1 period constraints
     for (long long i = 0; i < classes; i++)
     {
-        Pairwise *pairwise = pairwise_new();
+        if (verbose)
+            cout << "[VERBOSE] Adding am1 period constraints for literals[";
+        AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
         for (long long i2 = 0; i2 < periods; i2++)
         {
             int lit = t[i][i2];
-            pairwise_add(pairwise, lit);
+            if (verbose)
+                cout << lit << ",";
+            am1Encoder.am1encoder_add(lit);
         }
-        pairwise_encode(pairwise, 0, ipamirClauseCollector, solver);
-        pairwise_drop(pairwise);
+        am1Encoder.am1encoder_encode(&literalCounter, ipamirClauseCollector, solver);
+        if (verbose)
+            cout << "0] \n";
+        am1Encoder.am1encoder_drop();
     }
 
-    // Encode am1 room pairwise constraints
+    // Encode am1 room constraints
     for (long long i = 0; i < classes; i++)
     {
-        Pairwise *pairwise = pairwise_new();
+        if (verbose)
+            cout << "[VERBOSE] Adding am1 room constraints for literals[";
+        AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
         for (long long i2 = 0; i2 < rooms; i2++)
         {
             int lit = r[i][i2];
-            pairwise_add(pairwise, lit);
+            if (verbose)
+                cout << lit << ",";
+            am1Encoder.am1encoder_add(lit);
         }
-        pairwise_encode(pairwise, 0, ipamirClauseCollector, solver);
-        pairwise_drop(pairwise);
+        am1Encoder.am1encoder_encode(&literalCounter, ipamirClauseCollector, solver);
+        if (verbose)
+            cout << "0] \n";
+        am1Encoder.~AM1Encoder();
     }
 
     // Encode RoomConflict constraints
