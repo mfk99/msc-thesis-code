@@ -1,6 +1,6 @@
 #include "../input-parser/input-parser.h"
-#include "../../../ipamir.h"
-#include "../../../rustsat/capi/rustsat.h"
+#include "../../../../ipamir.h"
+#include "../../../../rustsat/capi/rustsat.h"
 #include "scheduling-encoding-generator.h"
 #include <iostream>
 #include <string>

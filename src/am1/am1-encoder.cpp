@@ -1,5 +1,5 @@
 #include <string>
-#include "../../../rustsat/capi/rustsat.h"
+#include "../../../../rustsat/capi/rustsat.h"
 #include "am1-encoder.h"
 
 using namespace std;

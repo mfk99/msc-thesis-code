@@ -1,7 +1,13 @@
 TARGET = output
 OBJ_DIR = build
 
-SRCS = index.cpp semantics/scheduling-semantics.cpp input-parser/input-parser.cpp scheduling-encoding-generator/scheduling-encoding-generator.cpp config/config.cpp am1/am1-encoder.cpp
+SRCS = \
+ src/index.cpp \
+ src/semantics/scheduling-semantics.cpp \
+ src/input-parser/input-parser.cpp \
+ src/scheduling-encoding-generator/scheduling-encoding-generator.cpp \
+ src/config/config.cpp \
+ src/am1/am1-encoder.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 CXX = g++

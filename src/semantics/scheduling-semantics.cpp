@@ -7,8 +7,8 @@
 #include "../input-parser/input-parser.h"
 #include "../config/config.h"
 #include "../am1/am1-encoder.h"
-#include "../../../ipamir.h"
-#include "../../../rustsat/capi/rustsat.h"
+#include "../../../../ipamir.h"
+#include "../../../../rustsat/capi/rustsat.h"
 
 using namespace std;
 using namespace RustSAT;
