@@ -1,16 +1,21 @@
 #include <vector>
 #include <string>
-#include <jsoncpp/json/json.h>
+#include <cstring>
+#include "../../libs/pugixml-1.15/src/pugixml.hpp"
 #include <fstream>
 #include "../input-parser/input-parser.h"
 #include <iostream>
 
 using namespace std;
+using namespace pugi;
+
+/* The style of creating a configuration file
+largely adheres to the ITC 2019 data format.
+More info available at: https://www.itc2019.org/format
+*/
 
 void generateConfig(vector<int> configVariables)
 {
-    Json::Value root;
-
     int weeks = configVariables[0];
     int days = configVariables[1];
     int hours = configVariables[2];
@@ -18,102 +23,124 @@ void generateConfig(vector<int> configVariables)
     int courses = configVariables[4];
     int courseHours = configVariables[5];
 
-    root["weeks"] = weeks;
-    root["days"] = days;
-    root["hours"] = hours;
-    root["rooms"] = rooms;
-    root["courses"] = courses;
-    root["courseHours"] = courseHours;
+    xml_document doc;
+    // add node with some name
+    xml_node root = doc.append_child("problem");
+    root.append_attribute("name") = filePath;
+    root.append_attribute("nrDays") = days;
+    root.append_attribute("nrWeeks") = weeks;
+    root.append_attribute("slotsPerDay") = hours;
 
-    Json::Value roomAvailability(Json::arrayValue);
+    // add description node with text child
+    root.append_child("optimization");
+    xml_node roomsXmlNode = root.append_child("rooms");
+    xml_node coursesXmlNode = root.append_child("courses");
+    root.append_child("distributions");
+    root.append_child("students");
+
     for (int i = 0; i < rooms; i++)
     {
-        Json::Value roomDimension(Json::arrayValue);
-        for (int i2 = 0; i2 < weeks; i2++)
+        xml_node singleRoomXmlNode = roomsXmlNode.append_child("room");
+        singleRoomXmlNode.append_attribute("id") = i + 1;
+        singleRoomXmlNode.append_attribute("capacity") = 0;
+        xml_node UnavailabilityXmlNode = singleRoomXmlNode.append_child("unavailable");
+        UnavailabilityXmlNode.append_attribute("days") = string(days, '0');
+        UnavailabilityXmlNode.append_attribute("start") = "0";
+        UnavailabilityXmlNode.append_attribute("length") = "0";
+        UnavailabilityXmlNode.append_attribute("weeks") = string(weeks, '0');
+    }
+
+    // TODO: Add support for multiple configs and subparts
+    for (int course = 1; course <= courses; course++)
+    {
+        xml_node singleCourseXmlNode = coursesXmlNode.append_child("course");
+        singleCourseXmlNode.append_attribute("id") = course;
+        for (int config = 0; config < 1; config++)
         {
-            Json::Value weekDimensions(Json::arrayValue);
-            for (int i3 = 0; i3 < days; i3++)
+            xml_node courseConfigXmlNode = singleCourseXmlNode.append_child("config");
+            for (int subpart = 1; subpart <= 1; subpart++)
             {
-                Json::Value dayDimension(Json::arrayValue);
-                for (int i4 = 0; i4 < hours; i4++)
+                xml_node courseConfigSubPartXmlNode = courseConfigXmlNode.append_child("subpart");
+                courseConfigSubPartXmlNode.append_attribute("id") = subpart;
+                for (int lecture = 1; lecture <= courseHours; lecture++)
                 {
-                    dayDimension.append(1);
+                    xml_node lectureXmlNode = courseConfigSubPartXmlNode.append_child("class");
+                    lectureXmlNode.append_attribute("id") = "Lec" + to_string(lecture);
+                    lectureXmlNode.append_attribute("limit") = 0;
                 }
-                weekDimensions.append(dayDimension);
             }
-            roomDimension.append(weekDimensions);
         }
-        roomAvailability.append(roomDimension);
     }
 
-    root["roomAvailability"] = roomAvailability;
-
-    Json::Value roomTravelTime(Json::arrayValue);
-    for (int i = 0; i < rooms; i++)
-    {
-        Json::Value row(Json::arrayValue);
-        for (int i2 = 0; i2 < rooms; i2++)
-        {
-            row.append(0);
-        }
-        roomTravelTime.append(row);
-    }
-
-    root["roomTravelTime"] = roomTravelTime;
-
-    string path = filePath;
-    std::ofstream configFile(path);
-    Json::StreamWriterBuilder writer;
-    writer["indentation"] = "    ";
-    Json::StreamWriter *jsonWriter = writer.newStreamWriter();
-    jsonWriter->write(root, &configFile);
-    configFile.close();
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    doc.save_file(filePathChar);
 }
 
 vector<int> getConfigVariables()
 {
-    string path = filePath;
-    std::ifstream configFile(filePath, std::ifstream::binary);
-    Json::Value config;
-    configFile >> config;
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    xml_document doc;
+    xml_parse_result result = doc.load_file(filePathChar);
+    if (verbose)
+        cout << "[VERBOSE] Load result: " << result.description() << "\n";
 
-    vector<int> configVariables;
-    int weeks = config["weeks"].asInt();
-    int days = config["days"].asInt();
-    int hours = config["hours"].asInt();
-    int rooms = config["rooms"].asInt();
-    int courses = config["courses"].asInt();
-    int courseHours = config["courseHours"].asInt();
-    configVariables.push_back(weeks);
-    configVariables.push_back(days);
-    configVariables.push_back(hours);
-    configVariables.push_back(rooms);
-    configVariables.push_back(courses);
-    configVariables.push_back(courseHours);
-    return configVariables;
+    xml_node problemNode = doc.child("problem");
+    int weeks = problemNode.attribute("nrWeeks").as_int();
+    int days = problemNode.attribute("nrDays").as_int();
+    int hours = problemNode.attribute("slotsPerDay").as_int();
+
+    int rooms = 0;
+    xml_node roomsNode = problemNode.child("rooms");
+    for (xml_node roomNode : roomsNode.children())
+        rooms++;
+
+    int courses = 0;
+    xml_node coursesNode = problemNode.child("courses");
+    for (xml_node courseNode : coursesNode.children())
+        courses++;
+
+    int courseHours = 0;
+    for (xml_node classNode : coursesNode.child("course").child("config").child("subpart").children())
+        courseHours++;
+
+    return vector<int>{weeks, days, hours, rooms, courses, courseHours};
 }
 
 vector<vector<vector<vector<int>>>> getRoomAvailability()
 {
-    string path = filePath;
-    std::ifstream configFile(filePath, std::ifstream::binary);
-    Json::Value config;
-    configFile >> config;
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    xml_document doc;
+    xml_parse_result result = doc.load_file(filePathChar);
+    if (verbose)
+        cout << "[VERBOSE] Load result: " << result.description() << "\n";
 
     vector<vector<vector<vector<int>>>> roomAvailability;
-    const Json::Value &jsonArray = config["roomAvailability"];
-    for (const Json::Value &roomDimension : jsonArray)
+
+    xml_node problemNode = doc.child("problem");
+    int weeks = problemNode.attribute("nrWeeks").as_int();
+    int days = problemNode.attribute("nrDays").as_int();
+    int hours = problemNode.attribute("slotsPerDay").as_int();
+    xml_node roomsNode = problemNode.child("rooms");
+
+    for (xml_node roomNode : roomsNode.children())
     {
         vector<vector<vector<int>>> room;
-        for (const Json::Value &weekDimension : roomDimension)
+        for (int i = 0; i < weeks; i++)
         {
             vector<vector<int>> week;
-            for (const Json::Value &row : weekDimension)
+            for (int i2 = 0; i2 < days; i2++)
             {
                 vector<int> dayHours;
-                for (const Json::Value &hour : row)
+                string roomUnavailability = roomNode.child("unavailable").attribute("days").as_string();
+                for (int i3 = 0; i3 < hours; i3++)
                 {
-                    dayHours.push_back(hour.asInt());
+                    if (roomUnavailability[i3] == '0')
+                        dayHours.push_back(0);
+                    else
+                        dayHours.push_back(1);
                 }
                 week.push_back(dayHours);
             }
