@@ -266,11 +266,12 @@ void runBenchMark()
             {
                 for (int i4 = 0; i4 < hours; i4++)
                 {
-                    if (!roomAvailability[i][i2][i3][i4])
+                    if (roomAvailability[i][i2][i3][i4] == 1)
                     {
+
                         for (int i5 = 0; i5 < classes; i5++)
                         {
-                            int periodIndex = i2 * courseHours + i3;
+                            int periodIndex = i2 * days * hours + i3 * hours + i4;
                             int timingLit = t[i5][periodIndex];
                             int roomLit = r[i5][i];
                             if (verbose)
@@ -360,7 +361,7 @@ void runBenchMark()
     }
 
     // Encode WorkDay constraints
-    int maxWorkDayLength = hours - 1;
+    int maxWorkDayLength = hours;
     for (long long week = 0; week < weeks; week++)
     {
         for (long long day = 0; day < days; day++)

@@ -117,36 +117,44 @@ vector<vector<vector<vector<int>>>> getRoomAvailability()
     if (verbose)
         cout << "[VERBOSE] Load result: " << result.description() << "\n";
 
-    vector<vector<vector<vector<int>>>> roomAvailability;
-
     xml_node problemNode = doc.child("problem");
     int weeks = problemNode.attribute("nrWeeks").as_int();
     int days = problemNode.attribute("nrDays").as_int();
     int hours = problemNode.attribute("slotsPerDay").as_int();
     xml_node roomsNode = problemNode.child("rooms");
+    size_t rooms = distance(roomsNode.children("room").begin(), roomsNode.children("room").end());
+    vector<vector<vector<vector<int>>>> roomAvailability(rooms, vector<vector<vector<int>>>(weeks, vector<vector<int>>(days, vector<int>(hours))));
 
+    int roomIndex = 0;
     for (xml_node roomNode : roomsNode.children())
     {
-        vector<vector<vector<int>>> room;
-        for (int i = 0; i < weeks; i++)
+        for (xml_node unavailabilityNode : roomNode.children("unavailable"))
         {
-            vector<vector<int>> week;
-            for (int i2 = 0; i2 < days; i2++)
+            string weeklyRoomUnavailability = unavailabilityNode.attribute("weeks").as_string();
+            for (int weekIndex = 0; weekIndex < weeks; weekIndex++)
             {
-                vector<int> dayHours;
-                string roomUnavailability = roomNode.child("unavailable").attribute("days").as_string();
-                for (int i3 = 0; i3 < hours; i3++)
+                if (weeklyRoomUnavailability[weekIndex] == '1')
                 {
-                    if (roomUnavailability[i3] == '0')
-                        dayHours.push_back(0);
-                    else
-                        dayHours.push_back(1);
+                    string dailyRoomUnavailability = unavailabilityNode.attribute("days").as_string();
+                    for (int dayIndex = 0; dayIndex < days; dayIndex++)
+                    {
+                        if (dailyRoomUnavailability[dayIndex] == '1')
+                        {
+                            int unavailabilityStartIndex = unavailabilityNode.attribute("start").as_int();
+                            int unavailabilityLength = unavailabilityNode.attribute("length").as_int();
+                            for (int i = 0; i < unavailabilityLength; i++)
+                            {
+                                roomAvailability[roomIndex]
+                                                [weekIndex]
+                                                [dayIndex]
+                                                [unavailabilityStartIndex + i] = 1;
+                            }
+                        }
+                    }
                 }
-                week.push_back(dayHours);
             }
-            room.push_back(week);
         }
-        roomAvailability.push_back(room);
+        roomIndex++;
     }
     return roomAvailability;
 }
