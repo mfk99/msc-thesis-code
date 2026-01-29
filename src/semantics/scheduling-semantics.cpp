@@ -82,15 +82,6 @@ void runBenchMark()
         }
     }
 
-    cout << "courseIdLookUp[\"Lec1\"][0]:" << courseIdLookUp["Lec1"][0] << "\n";
-    cout << "courseIdLookUp[\"Lec1\"][1]:" << courseIdLookUp["Lec1"][1] << "\n";
-    cout << "courseIdLookUp[\"Lec2\"][0]:" << courseIdLookUp["Lec2"][0] << "\n";
-    cout << "courseIdLookUp[\"Lec2\"][1]:" << courseIdLookUp["Lec2"][1] << "\n";
-    cout << "courseIdLookUp[\"Lec3\"][0]:" << courseIdLookUp["Lec3"][0] << "\n";
-    cout << "courseIdLookUp[\"Lec3\"][1]:" << courseIdLookUp["Lec3"][1] << "\n";
-    cout << "courseIdLookUp[\"Lec4\"][0]:" << courseIdLookUp["Lec4"][0] << "\n";
-    cout << "courseIdLookUp[\"Lec4\"][1]:" << courseIdLookUp["Lec4"][1] << "\n";
-
     vector<vector<vector<vector<int>>>> periodLiterals; // Helper vector
     //[course][week][day][hour]
     for (long long i = 0; i < weeks; i++)
