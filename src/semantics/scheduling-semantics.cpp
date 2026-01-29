@@ -560,7 +560,7 @@ void runBenchMark()
                     int room = 0;
                     for (int i2 = 0; i2 < periods; i2++)
                     {
-                        int periodLit = t[i + classIndex][i2];
+                        int periodLit = t[i * courses + classIndex][i2];
                         if (0 < ipamir_val_lit(solver, periodLit))
                         {
                             period = i2;
@@ -572,7 +572,7 @@ void runBenchMark()
 
                     for (int i2 = 0; i2 < rooms; i2++)
                     {
-                        int roomLit = r[i + classIndex][i2];
+                        int roomLit = r[i * courses + classIndex][i2];
                         if (0 < ipamir_val_lit(solver, roomLit))
                         {
                             room = i2;
