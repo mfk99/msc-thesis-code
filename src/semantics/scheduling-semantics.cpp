@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 #include <string>
 #include <chrono>
 #include <numeric>
@@ -64,6 +65,31 @@ void runBenchMark()
 
     uint32_t literalCounter = 1;
     int periodLiteralCounter = 1;
+
+    // Maps course id(name) to 2-slot vector containing first timing and room literal
+    map<string, vector<int>> courseIdLookUp;
+    vector<vector<string>> courseNames = getCourseNames();
+    for (size_t courseIndex = 0; courseIndex < courseNames.size(); courseIndex++)
+    {
+        vector<string> classNames = courseNames[courseIndex];
+        int classIndex = 0;
+        for (string className : classNames)
+        {
+            int timingLiteral = (courseIndex * courseHours + classIndex) * weeks * days * hours + 1;
+            int roomLiteral = weeks * days * hours * courses * courseHours + (courseIndex * courses + classIndex) * rooms + 1;
+            courseIdLookUp[className] = {timingLiteral, roomLiteral};
+            classIndex++;
+        }
+    }
+
+    cout << "courseIdLookUp[\"Lec1\"][0]:" << courseIdLookUp["Lec1"][0] << "\n";
+    cout << "courseIdLookUp[\"Lec1\"][1]:" << courseIdLookUp["Lec1"][1] << "\n";
+    cout << "courseIdLookUp[\"Lec2\"][0]:" << courseIdLookUp["Lec2"][0] << "\n";
+    cout << "courseIdLookUp[\"Lec2\"][1]:" << courseIdLookUp["Lec2"][1] << "\n";
+    cout << "courseIdLookUp[\"Lec3\"][0]:" << courseIdLookUp["Lec3"][0] << "\n";
+    cout << "courseIdLookUp[\"Lec3\"][1]:" << courseIdLookUp["Lec3"][1] << "\n";
+    cout << "courseIdLookUp[\"Lec4\"][0]:" << courseIdLookUp["Lec4"][0] << "\n";
+    cout << "courseIdLookUp[\"Lec4\"][1]:" << courseIdLookUp["Lec4"][1] << "\n";
 
     vector<vector<vector<vector<int>>>> periodLiterals; // Helper vector
     //[course][week][day][hour]
@@ -474,8 +500,6 @@ void runBenchMark()
             }
         }
     }
-
-    vector<vector<string>> courseNames = getCourseNames();
 
     // Encode Precedence constraints
     for (long long courseHour1 = 0; courseHour1 <= courses; courseHour1 += courseHours)
