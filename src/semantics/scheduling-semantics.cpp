@@ -475,6 +475,8 @@ void runBenchMark()
         }
     }
 
+    vector<vector<string>> courseNames = getCourseNames();
+
     // Encode Precedence constraints
     for (long long courseHour1 = 0; courseHour1 <= courses; courseHour1 += courseHours)
     {
@@ -532,34 +534,41 @@ void runBenchMark()
         if (code == 30)
         {
             cout << "Assignment:\n";
-            for (int i = 0; i < classes; i++)
+            for (size_t i = 0; i < courseNames.size(); i++)
             {
-                int period = 0;
-                int room = 0;
-                for (int i2 = 0; i2 < periods; i2++)
+                vector<string> classNames = courseNames[i];
+                int classIndex = 0;
+                for (string className : classNames)
                 {
-                    int periodLit = t[i][i2];
-                    if (0 < ipamir_val_lit(solver, periodLit))
-                    {
-                        period = i2;
-                        if (verbose)
-                            cout << "[VERBOSE] periodLit:" << periodLit << "=1 \n";
-                        break;
-                    }
-                }
 
-                for (int i2 = 0; i2 < rooms; i2++)
-                {
-                    int roomLit = r[i][i2];
-                    if (0 < ipamir_val_lit(solver, roomLit))
+                    int period = 0;
+                    int room = 0;
+                    for (int i2 = 0; i2 < periods; i2++)
                     {
-                        room = i2;
-                        if (verbose)
-                            cout << "[VERBOSE] roomLit:" << roomLit << "=1 \n";
-                        break;
+                        int periodLit = t[i + classIndex][i2];
+                        if (0 < ipamir_val_lit(solver, periodLit))
+                        {
+                            period = i2;
+                            if (verbose)
+                                cout << "[VERBOSE] periodLit:" << periodLit << "=1 \n";
+                            break;
+                        }
                     }
+
+                    for (int i2 = 0; i2 < rooms; i2++)
+                    {
+                        int roomLit = r[i + classIndex][i2];
+                        if (0 < ipamir_val_lit(solver, roomLit))
+                        {
+                            room = i2;
+                            if (verbose)
+                                cout << "[VERBOSE] roomLit:" << roomLit << "=1 \n";
+                            break;
+                        }
+                    }
+                    classIndex++;
+                    cout << "Class " << className << " is assigned to room " << room << " in period " << period << "\n";
                 }
-                cout << "Class " << i << " is assigned to room " << room << " in period " << period << "\n";
             }
         }
 

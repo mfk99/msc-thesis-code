@@ -35,7 +35,7 @@ void generateConfig(vector<int> configVariables)
     root.append_child("optimization");
     xml_node roomsXmlNode = root.append_child("rooms");
     xml_node coursesXmlNode = root.append_child("courses");
-    root.append_child("distributions");
+    xml_node distributionsXmlNode = root.append_child("distributions");
     root.append_child("students");
 
     for (int i = 0; i < rooms; i++)
@@ -51,8 +51,11 @@ void generateConfig(vector<int> configVariables)
     }
 
     // TODO: Add support for multiple configs and subparts
+    int idCounter = 1;
+    vector<vector<string>> classIds;
     for (int course = 1; course <= courses; course++)
     {
+        vector<string> courseClassIds;
         xml_node singleCourseXmlNode = coursesXmlNode.append_child("course");
         singleCourseXmlNode.append_attribute("id") = course;
         for (int config = 0; config < 1; config++)
@@ -65,10 +68,27 @@ void generateConfig(vector<int> configVariables)
                 for (int lecture = 1; lecture <= courseHours; lecture++)
                 {
                     xml_node lectureXmlNode = courseConfigSubPartXmlNode.append_child("class");
-                    lectureXmlNode.append_attribute("id") = "Lec" + to_string(lecture);
+                    string classId = "Lec" + to_string(idCounter);
+                    lectureXmlNode.append_attribute("id") = classId;
+                    courseClassIds.push_back(classId);
+                    idCounter++;
                     lectureXmlNode.append_attribute("limit") = 0;
                 }
             }
+        }
+        classIds.push_back(courseClassIds);
+    }
+
+    // TODO: add maybe couple more, make the precedence one functional
+    for (int course = 0; course < courses; course++)
+    {
+        xml_node precedenceXmlNode = distributionsXmlNode.append_child("distribution");
+        precedenceXmlNode.append_attribute("type") = "Precedence";
+        precedenceXmlNode.append_attribute("required") = "true";
+        for (string classId : classIds[course])
+        {
+            xml_node classXmlNode = precedenceXmlNode.append_child("class");
+            classXmlNode.append_attribute("id") = classId;
         }
     }
 
@@ -106,6 +126,30 @@ vector<int> getConfigVariables()
         courseHours++;
 
     return vector<int>{weeks, days, hours, rooms, courses, courseHours};
+}
+
+vector<vector<string>> getCourseNames()
+{
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    xml_document doc;
+    xml_parse_result result = doc.load_file(filePathChar);
+    if (verbose)
+        cout << "[VERBOSE] Load result: " << result.description() << "\n";
+
+    xml_node coursesNode = doc.child("problem").child("courses");
+    vector<vector<string>> classNames;
+    for (xml_node courseNode : coursesNode.children())
+    {
+        vector<string> courseClassNames;
+        for (xml_node courseClassNode : courseNode.child("config").child("subpart").children())
+        {
+            string courseNameStr = courseClassNode.attribute("id").as_string();
+            courseClassNames.push_back(courseNameStr);
+        }
+        classNames.push_back(courseClassNames);
+    }
+    return (classNames);
 }
 
 vector<vector<vector<vector<int>>>> getRoomAvailability()
