@@ -82,32 +82,34 @@ void runBenchMark()
         }
     }
 
-    vector<vector<vector<vector<int>>>> periodLiterals; // Helper vector
-    //[course][week][day][hour]
-    for (long long i = 0; i < weeks; i++)
+    // Helper map, for each class returns first timing literal and n.o. literals for specified class
+    map<int, vector<int>> classTimingLookUp;
+
+    // Helper map, for each class returns first room literal and n.o. literals for specified class
+    map<int, vector<int>> classRoomLookUp;
+
+    // Helper vector, accessed with values `[course][courseHour][week][day]`
+    vector<vector<vector<vector<int>>>> periodLiterals(courses, vector<vector<vector<int>>>(courseHours, vector<vector<int>>(weeks, vector<int>(days, 0))));
+    for (long long i = 0; i < courses; i++)
     {
-        vector<vector<vector<int>>> weekLiterals;
-        for (long long i2 = 0; i2 < days; i2++)
+        for (long long i2 = 0; i2 < courseHours; i2++)
         {
-            vector<vector<int>> dayLiterals;
-            for (long long i3 = 0; i3 < hours; i3++)
+            for (long long i3 = 0; i3 < weeks; i3++)
             {
-                vector<int> hourLiterals;
-                for (long long i4 = 0; i4 < courses; i4++)
+                for (long long i4 = 0; i4 < days; i4++)
                 {
-                    hourLiterals.push_back(periodLiteralCounter);
+                    cout << "i:" << i << "\n";
+                    cout << "i2:" << i2 << "\n";
+                    cout << "i3:" << i3 << "\n";
+                    cout << "i4:" << i4 << "\n";
+                    cout << "i4:" << i4 << "\n";
+                    periodLiterals[i][i2][i3][i4] = periodLiteralCounter;
                     if (verbose)
                         cout << "[VERBOSE] adding hourLiteral: " << periodLiteralCounter << "\n";
-                    for (long long i5 = 0; i5 < rooms; i5++)
-                    {
-                        periodLiteralCounter++;
-                    }
-                }
-                dayLiterals.push_back(hourLiterals);
+                    periodLiteralCounter += hours;
+                };
             }
-            weekLiterals.push_back(dayLiterals);
         }
-        periodLiterals.push_back(weekLiterals);
     }
 
     // Initialize t
