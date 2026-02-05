@@ -1,4 +1,5 @@
 #include <vector>
+#include <map>
 #include <string>
 #include <cstring>
 #include "../../libs/pugixml-1.15/src/pugixml.hpp"
@@ -201,4 +202,70 @@ vector<vector<vector<vector<int>>>> getRoomAvailability()
         roomIndex++;
     }
     return roomAvailability;
+}
+
+struct Distribution
+{
+    bool required;
+    int penalty;
+    vector<string> classes;
+};
+
+map<string, vector<Distribution>> getDistributions()
+{
+    map<string, vector<Distribution>> distributions;
+
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    xml_document doc;
+    xml_parse_result result = doc.load_file(filePathChar);
+    if (verbose)
+        cout << "[VERBOSE] Load result: " << result.description() << "\n";
+
+    xml_node distributionsNode = doc.child("problem").child("distributions");
+
+    for (xml_node distributionNode : distributionsNode.children())
+    {
+
+        string distributionType = distributionNode.attribute("type").as_string();
+
+        bool required = 0;
+        if (distributionNode.attribute("required"))
+        {
+            string requiredStr = distributionNode.attribute("required").as_string();
+            bool required = requiredStr == "true";
+        }
+
+        int penalty = 0;
+        if (distributionNode.attribute("penalty"))
+        {
+            penalty = distributionNode.attribute("penalty").as_int();
+        }
+
+        vector<string> classes;
+        for (xml_node classNode : distributionNode.children())
+        {
+            string className = classNode.attribute("id").as_string();
+            cout << "className:" << className << "\n";
+            classes.push_back(className);
+        }
+
+        Distribution newDistribution;
+        newDistribution.required = required;
+        newDistribution.penalty = penalty;
+        newDistribution.classes = classes;
+
+        if (distributions.count(distributionType))
+        {
+            vector<Distribution> distributionVector;
+            distributionVector.push_back(newDistribution);
+            distributions[distributionType] = distributionVector;
+        }
+        else
+        {
+            distributions[distributionType].push_back(newDistribution);
+        }
+    }
+
+    return distributions;
 }
