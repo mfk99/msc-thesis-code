@@ -80,7 +80,21 @@ void generateConfig(vector<int> configVariables)
         classIds.push_back(courseClassIds);
     }
 
-    // TODO: add maybe couple more, make the precedence one functional
+    // TODO: add the rest
+    // Add default SameStart constraint
+    for (int course = 0; course < courses; course++)
+    {
+        xml_node precedenceXmlNode = distributionsXmlNode.append_child("distribution");
+        precedenceXmlNode.append_attribute("type") = "SameStart";
+        precedenceXmlNode.append_attribute("required") = "true";
+        for (string classId : classIds[course])
+        {
+            xml_node classXmlNode = precedenceXmlNode.append_child("class");
+            classXmlNode.append_attribute("id") = classId;
+        }
+    }
+
+    // Add Precedence constraint
     for (int course = 0; course < courses; course++)
     {
         xml_node precedenceXmlNode = distributionsXmlNode.append_child("distribution");
@@ -233,7 +247,7 @@ map<string, vector<Distribution>> getDistributions()
         if (distributionNode.attribute("required"))
         {
             string requiredStr = distributionNode.attribute("required").as_string();
-            bool required = requiredStr == "true";
+            required = requiredStr == "true";
         }
 
         int penalty = 0;
@@ -246,7 +260,6 @@ map<string, vector<Distribution>> getDistributions()
         for (xml_node classNode : distributionNode.children())
         {
             string className = classNode.attribute("id").as_string();
-            cout << "className:" << className << "\n";
             classes.push_back(className);
         }
 
@@ -257,13 +270,11 @@ map<string, vector<Distribution>> getDistributions()
 
         if (distributions.count(distributionType))
         {
-            vector<Distribution> distributionVector;
-            distributionVector.push_back(newDistribution);
-            distributions[distributionType] = distributionVector;
+            distributions[distributionType].push_back(newDistribution);
         }
         else
         {
-            distributions[distributionType].push_back(newDistribution);
+            distributions[distributionType] = vector<Distribution>{newDistribution};
         }
     }
 
