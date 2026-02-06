@@ -14,6 +14,8 @@
 using namespace std;
 using namespace RustSAT;
 
+void ipamirAddSoftClause(void *solver, vector<int> clause, uint32_t &literalCount, int penalty);
+
 vector<int> parseUserClauseInput(string input)
 {
     vector<int> clauseLiterals;
@@ -28,6 +30,50 @@ vector<int> parseUserClauseInput(string input)
     }
     clauseLiterals.push_back(stoi(input));
     return clauseLiterals;
+}
+
+void ipamirAddClause(void *solver, vector<int> clause, uint32_t &literalCount, bool hardClause, int penalty = 0)
+{
+    if (hardClause)
+    {
+        for (int literal : clause)
+        {
+            ipamir_add_hard(solver, literal);
+        }
+        ipamir_add_hard(solver, 0);
+    }
+    else
+    {
+        ipamirAddSoftClause(solver, clause, literalCount, penalty);
+    }
+}
+
+void ipamirAddSoftClause(void *solver, vector<int> clause, uint32_t &literalCount, int penalty)
+{
+    if (clause.size() == 1)
+    {
+        if (verbose)
+            cout << "[VERBOSE] Adding a unit soft literal " << clause[0] << " with weight " << penalty << "\n";
+        ipamir_add_soft_lit(solver, clause[0], penalty);
+        return;
+    }
+
+    int softLit = literalCount;
+    literalCount += 1;
+    ipamir_add_soft_lit(solver, softLit, penalty);
+    if (verbose)
+        cout << "[VERBOSE] Adding soft literal " << softLit << " with weight " << penalty << " and clause ";
+
+    for (int literal : clause)
+    {
+        ipamir_add_hard(solver, literal);
+        if (verbose)
+            cout << literal << ", ";
+    }
+    ipamir_add_hard(solver, softLit);
+    ipamir_add_hard(solver, 0);
+    if (verbose)
+        cout << softLit << ", 0\n";
 }
 
 void ipamirClauseCollector(int lit, void *solver)
@@ -187,6 +233,7 @@ void runBenchMark()
         }
     }
 
+    // Encode at-least-one period constraints
     for (long long i = 0; i < classes; i++)
     {
         for (long long i2 = 0; i2 < periods; i2++)
@@ -197,6 +244,7 @@ void runBenchMark()
         ipamir_add_hard(solver, 0);
     }
 
+    // Encode at-least-one room constraints
     for (long long i = 0; i < classes; i++)
     {
         for (long long i2 = 0; i2 < rooms; i2++)
@@ -340,9 +388,11 @@ void runBenchMark()
                                                          (day2 * hours) + hour2;
                                         if (verbose)
                                             cout << "[VERBOSE] Adding SameStart constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                                        ipamir_add_hard(solver, -periodLit1);
-                                        ipamir_add_hard(solver, -periodLit2);
-                                        ipamir_add_hard(solver, 0);
+                                        ipamirAddClause(solver,
+                                                        {-periodLit1, -periodLit2},
+                                                        literalCounter,
+                                                        sameStartDistribution.required,
+                                                        sameStartDistribution.weight);
                                     }
                                 }
                             }
