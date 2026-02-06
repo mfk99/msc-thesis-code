@@ -94,6 +94,19 @@ void generateConfig(vector<int> configVariables)
         }
     }
 
+    // Add default SameDays constraint
+    for (int course = 0; course < courses; course++)
+    {
+        xml_node precedenceXmlNode = distributionsXmlNode.append_child("distribution");
+        precedenceXmlNode.append_attribute("type") = "SameDays";
+        precedenceXmlNode.append_attribute("required") = "true";
+        for (string classId : classIds[course])
+        {
+            xml_node classXmlNode = precedenceXmlNode.append_child("class");
+            classXmlNode.append_attribute("id") = classId;
+        }
+    }
+
     // Add Precedence constraint
     for (int course = 0; course < courses; course++)
     {
