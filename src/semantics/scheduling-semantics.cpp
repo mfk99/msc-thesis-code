@@ -567,7 +567,7 @@ void runBenchMark()
                                                          (week2 * days * hours) +
                                                          (day2 * hours) + hour2;
                                         if (verbose)
-                                            cout << "[VERBOSE] 1- Adding SameWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                            cout << "[VERBOSE] Adding SameWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
                                         ipamirAddClause(solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
@@ -577,6 +577,41 @@ void runBenchMark()
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode SameRoom constraints
+    for (Distribution sameRoomsDistribution : distributionsMap["SameRoom"])
+    {
+        vector<string> distributionClasses = sameRoomsDistribution.classes;
+        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
+        {
+            string class1Id = distributionClasses[class1];
+            int classRoom1Literal = courseIdLookUp[class1Id][1];
+
+            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
+            {
+                string class2Id = distributionClasses[class2];
+                int classRoom2Literal = courseIdLookUp[class2Id][1];
+                for (long long room1 = 0; room1 < rooms; room1++)
+                {
+                    int roomLit1 = classRoom1Literal + room1;
+                    for (long long room2 = 0; room2 < rooms; room2++)
+                    {
+                        if (room1 == room2)
+                            continue;
+                        int roomLit2 = classRoom2Literal + room2;
+
+                        if (verbose)
+                            cout << "[VERBOSE] Adding SameRoom constraint: -" << roomLit1 << ", -" << roomLit2 << ", 0 \n";
+                        ipamirAddClause(solver,
+                                        {-roomLit1, -roomLit2},
+                                        literalCounter,
+                                        sameRoomsDistribution.required,
+                                        sameRoomsDistribution.weight);
                     }
                 }
             }
@@ -598,29 +633,6 @@ void runBenchMark()
                         cout << "[VERBOSE] Adding precedence constraint: -" << timing1Lit << ", -" << timing2Lit << ", 0 \n";
                     ipamir_add_hard(solver, -timing1Lit);
                     ipamir_add_hard(solver, -timing2Lit);
-                    ipamir_add_hard(solver, 0);
-                }
-            }
-        }
-    }
-
-    // Encode SameRoom constraints
-    for (long long i = 0; i <= courses; i++)
-    {
-        for (long long i2 = i + 1; i2 % courses != 0; i2++)
-        {
-            for (long long i3 = 0; i3 < rooms; i3++)
-            {
-                int room1Lit = r[i][i3];
-                for (long long i4 = 0; i4 < rooms; i4++)
-                {
-                    if (i3 == i4)
-                        continue;
-                    int room2Lit = r[i2][i4];
-                    if (verbose)
-                        cout << "[VERBOSE] Adding SameRoom constraint: -" << room1Lit << ", -" << room2Lit << ", 0 \n";
-                    ipamir_add_hard(solver, -room1Lit);
-                    ipamir_add_hard(solver, -room2Lit);
                     ipamir_add_hard(solver, 0);
                 }
             }
