@@ -619,21 +619,35 @@ void runBenchMark()
     }
 
     // Encode Precedence constraints
-    for (long long courseHour1 = 0; courseHour1 <= courses; courseHour1 += courseHours)
+    for (Distribution precedenceDistribution : distributionsMap["Precedence"])
     {
-        for (long long courseHour2 = courseHour1 + 1; courseHour2 < courseHour1 + courseHours; courseHour2++)
+        vector<string> distributionClasses = precedenceDistribution.classes;
+        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
         {
-            for (long long period1 = 0; period1 < periods; period1++)
+            string class1Id = distributionClasses[class1];
+            int classPeriod1Literal = courseIdLookUp[class1Id][0];
+
+            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
             {
-                int timing1Lit = t[courseHour1][period1];
-                for (long long period2 = 0; period2 < period1; period2++)
+                string class2Id = distributionClasses[class2];
+                int classPeriod2Literal = courseIdLookUp[class2Id][0];
+
+                int maxPeriodOffset = periods;
+
+                for (long long period1Offset = 0; period1Offset < maxPeriodOffset; period1Offset++)
                 {
-                    int timing2Lit = t[courseHour2][period2];
-                    if (verbose)
-                        cout << "[VERBOSE] Adding precedence constraint: -" << timing1Lit << ", -" << timing2Lit << ", 0 \n";
-                    ipamir_add_hard(solver, -timing1Lit);
-                    ipamir_add_hard(solver, -timing2Lit);
-                    ipamir_add_hard(solver, 0);
+                    int periodLit1 = classPeriod1Literal + period1Offset;
+                    for (long long period2Offset = 0; period2Offset < period1Offset; period2Offset++)
+                    {
+                        int periodLit2 = classPeriod2Literal + period2Offset;
+                        if (verbose)
+                            cout << "[VERBOSE] v.2 Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                        ipamirAddClause(solver,
+                                        {-periodLit1, -periodLit2},
+                                        literalCounter,
+                                        precedenceDistribution.required,
+                                        precedenceDistribution.weight);
+                    }
                 }
             }
         }
