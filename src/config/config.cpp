@@ -15,6 +15,34 @@ largely adheres to the ITC 2019 data format.
 More info available at: https://www.itc2019.org/format
 */
 
+struct Room
+{
+    string id;
+    int penalty;
+};
+
+struct Timing
+{
+    string days;
+    string weeks;
+    int start;
+    int length;
+    int penalty;
+};
+
+struct Class
+{
+    vector<Room> rooms;
+    vector<Timing> timings;
+};
+
+struct Distribution
+{
+    bool required;
+    int penalty;
+    vector<string> classes;
+};
+
 void generateConfig(vector<int> configVariables)
 {
     int weeks = configVariables[0];
@@ -74,6 +102,18 @@ void generateConfig(vector<int> configVariables)
                     courseClassIds.push_back(classId);
                     idCounter++;
                     lectureXmlNode.append_attribute("limit") = 0;
+                    for (int room = 1; room <= rooms; room++)
+                    {
+                        xml_node roomXmlNode = lectureXmlNode.append_child("room");
+                        roomXmlNode.append_attribute("id") = room;
+                        roomXmlNode.append_attribute("penalty") = 0;
+                    }
+                    xml_node timeXmlNode = lectureXmlNode.append_child("time");
+                    timeXmlNode.append_attribute("days") = string(days, '1');
+                    timeXmlNode.append_attribute("start") = 0;
+                    timeXmlNode.append_attribute("length") = 1;
+                    timeXmlNode.append_attribute("weeks") = string(weeks, '1');
+                    timeXmlNode.append_attribute("penalty") = 0;
                 }
             }
         }
@@ -167,16 +207,16 @@ vector<int> getConfigVariables()
 
     int rooms = 0;
     xml_node roomsNode = problemNode.child("rooms");
-    for (xml_node roomNode : roomsNode.children())
+    for ([[maybe_unused]] xml_node _ : roomsNode.children())
         rooms++;
 
     int courses = 0;
     xml_node coursesNode = problemNode.child("courses");
-    for (xml_node courseNode : coursesNode.children())
+    for ([[maybe_unused]] xml_node _ : coursesNode.children())
         courses++;
 
     int courseHours = 0;
-    for (xml_node classNode : coursesNode.child("course").child("config").child("subpart").children())
+    for ([[maybe_unused]] xml_node _ : coursesNode.child("course").child("config").child("subpart").children())
         courseHours++;
 
     return vector<int>{weeks, days, hours, rooms, courses, courseHours};
@@ -204,6 +244,63 @@ vector<vector<string>> getCourseNames()
         classNames.push_back(courseClassNames);
     }
     return (classNames);
+}
+
+map<string, Class> getClasses()
+{
+    map<string, Class> classes;
+
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    xml_document doc;
+    xml_parse_result result = doc.load_file(filePathChar);
+    if (verbose)
+        cout << "[VERBOSE] Load result: " << result.description() << "\n";
+
+    xml_node coursesNode = doc.child("problem").child("courses");
+
+    for (xml_node courseNode : coursesNode.children())
+    {
+        for (xml_node configNode : courseNode.children())
+        {
+            for (xml_node subpartNode : configNode.children())
+            {
+                for (xml_node classNode : subpartNode.children())
+                {
+                    Class newClass;
+
+                    vector<Room> newRoomVector;
+                    for (xml_node roomNode : classNode.children("room"))
+                    {
+                        Room newRoom;
+                        newRoom.id = roomNode.attribute("id").as_string();
+                        newRoom.penalty = roomNode.attribute("penalty").as_int();
+                        newRoomVector.push_back(newRoom);
+                    }
+
+                    vector<Timing> newTimingVector;
+                    for (xml_node timeNode : classNode.children("time"))
+                    {
+                        Timing newTiming;
+                        newTiming.days = timeNode.attribute("days").as_string();
+                        newTiming.weeks = timeNode.attribute("weeks").as_string();
+                        newTiming.start = timeNode.attribute("start").as_int();
+                        newTiming.length = timeNode.attribute("length").as_int();
+                        newTiming.penalty = timeNode.attribute("penalty").as_int();
+                        newTimingVector.push_back(newTiming);
+                    }
+
+                    newClass.rooms = newRoomVector;
+                    newClass.timings = newTimingVector;
+
+                    string classId = classNode.attribute("id").as_string();
+
+                    classes[classId] = newClass;
+                }
+            }
+        }
+    }
+    return classes;
 }
 
 vector<vector<vector<vector<int>>>> getRoomAvailability()
@@ -256,13 +353,6 @@ vector<vector<vector<vector<int>>>> getRoomAvailability()
     }
     return roomAvailability;
 }
-
-struct Distribution
-{
-    bool required;
-    int penalty;
-    vector<string> classes;
-};
 
 map<string, vector<Distribution>> getDistributions()
 {
