@@ -392,7 +392,7 @@ void runBenchMark()
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
                                                         sameStartDistribution.required,
-                                                        sameStartDistribution.weight);
+                                                        sameStartDistribution.penalty);
                                     }
                                 }
                             }
@@ -443,7 +443,7 @@ void runBenchMark()
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
                                                         sameDaysDistribution.required,
-                                                        sameDaysDistribution.weight);
+                                                        sameDaysDistribution.penalty);
                                     }
                                 }
                             }
@@ -572,7 +572,7 @@ void runBenchMark()
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
                                                         sameWeeksDistribution.required,
-                                                        sameWeeksDistribution.weight);
+                                                        sameWeeksDistribution.penalty);
                                     }
                                 }
                             }
@@ -611,7 +611,7 @@ void runBenchMark()
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
                                         sameRoomsDistribution.required,
-                                        sameRoomsDistribution.weight);
+                                        sameRoomsDistribution.penalty);
                     }
                 }
             }
@@ -646,7 +646,7 @@ void runBenchMark()
                                         {-periodLit1, -periodLit2},
                                         literalCounter,
                                         precedenceDistribution.required,
-                                        precedenceDistribution.weight);
+                                        precedenceDistribution.penalty);
                     }
                 }
             }
