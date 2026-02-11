@@ -3,11 +3,19 @@
 #include <vector>
 #include <map>
 #include <string>
+struct RoomUnavailability
+{
+    std::string days;
+    std::string weeks;
+    int start;
+    int length;
+};
 
 struct Room
 {
     std::string id;
     int penalty;
+    std::vector<RoomUnavailability> unavailability;
 };
 
 struct Timing
@@ -21,6 +29,7 @@ struct Timing
 
 struct Class
 {
+    std::string id;
     std::vector<Room> rooms;
     std::vector<Timing> timings;
 };

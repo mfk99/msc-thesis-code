@@ -99,135 +99,79 @@ void runBenchMark()
 
     void *solver = ipamir_init();
 
+    map<string, Class> classMap = getClasses();
+
+    vector<Class> classVec;
+    for (auto &pair : classMap)
+    {
+        classVec.push_back(pair.second);
+    }
+
+    // Represents class period assignments
+    vector<vector<int>> t;
+    // Represents class room assignments
+    vector<vector<int>> r;
+
+    uint32_t literalCounter = 1;
+
+    for (auto &[classId, classObj] : classMap)
+    {
+        // Initilaize t
+        vector<int> timingLiterals;
+        if (verbose)
+            cout << "[VERBOSE] Created timing assignment literals " << literalCounter;
+        for ([[maybe_unused]] Timing timing : classObj.timings)
+        {
+            timingLiterals.push_back(literalCounter);
+            literalCounter++;
+        }
+        if (verbose)
+            cout << " - " << literalCounter - 1 << " for course " << classId << "\n";
+        t.push_back(timingLiterals);
+
+        // Initilaize r
+        vector<int> roomLiterals;
+        if (verbose)
+            cout << "[VERBOSE] Created room assignment literals " << literalCounter;
+        for ([[maybe_unused]] Room room : classObj.rooms)
+        {
+            roomLiterals.push_back(literalCounter);
+            literalCounter++;
+        }
+        if (verbose)
+            cout << " - " << literalCounter - 1 << " for course " << classId << "\n";
+        r.push_back(roomLiterals);
+    }
+
     if (verbose)
         cout << "[VERBOSE] Creating clauses for "
              << classes << " classes with "
              << periods << " time periods and "
              << rooms << " rooms.\n";
 
-    // Represents class period assignments
-    vector<vector<int>> t(classes);
-    // Represents class room assignments
-    vector<vector<int>> r(classes);
-
-    uint32_t literalCounter = 1;
-    int periodLiteralCounter = 1;
-
-    // Maps course id(name) to 2-slot vector containing first timing and room literal
-    map<string, vector<int>> courseIdLookUp;
-    vector<vector<string>> courseNames = getCourseNames();
-    for (size_t courseIndex = 0; courseIndex < courseNames.size(); courseIndex++)
-    {
-        vector<string> classNames = courseNames[courseIndex];
-        int classIndex = 0;
-        for (string className : classNames)
-        {
-            int timingLiteral = (courseIndex * courseHours + classIndex) * weeks * days * hours + 1;
-            int roomLiteral = weeks * days * hours * courses * courseHours + (courseIndex * courses + classIndex) * rooms + 1;
-            courseIdLookUp[className] = {timingLiteral, roomLiteral};
-            classIndex++;
-        }
-    }
-
     // Map of distributions, used for generating distribution encodings
     map<string, vector<Distribution>> distributionsMap = getDistributions();
 
-    // Helper map, for each class returns first timing literal and n.o. literals for specified class
-    map<int, vector<int>> classTimingLookUp;
-
-    // Helper map, for each class returns first room literal and n.o. literals for specified class
-    map<int, vector<int>> classRoomLookUp;
-
-    // Helper vector, accessed with values `[course][courseHour][week][day]`
-    vector<vector<vector<vector<int>>>> periodLiterals(courses, vector<vector<vector<int>>>(courseHours, vector<vector<int>>(weeks, vector<int>(days, 0))));
-    for (long long i = 0; i < courses; i++)
-    {
-        for (long long i2 = 0; i2 < courseHours; i2++)
-        {
-            for (long long i3 = 0; i3 < weeks; i3++)
-            {
-                for (long long i4 = 0; i4 < days; i4++)
-                {
-                    periodLiterals[i][i2][i3][i4] = periodLiteralCounter;
-                    if (verbose)
-                        cout << "[VERBOSE] adding hourLiteral: " << periodLiteralCounter << "\n";
-                    periodLiteralCounter += hours;
-                };
-            }
-        }
-    }
-
-    // Initialize t
-    for (long long i = 0; i < classes; i++)
-    {
-        int initialLiteralCounter = literalCounter;
-        vector<int> periodAssignment(periods);
-        iota(periodAssignment.begin(), periodAssignment.end(), literalCounter);
-        t[i] = periodAssignment;
-        literalCounter += periods;
-        if (verbose)
-        {
-            cout << "[VERBOSE] Created literals " << initialLiteralCounter << "-" << literalCounter - 1
-                 << " in t for class " << i << "\n";
-        }
-    }
-
     if (verbose)
     {
-        cout << "[VERBOSE] literalCounter:" << literalCounter << "\n";
-    }
-
-    // Initialize r
-    for (long long i = 0; i < classes; i++)
-    {
-        int initialLiteralCounter = literalCounter;
-        vector<int> roomAssignment(rooms);
-        iota(roomAssignment.begin(), roomAssignment.end(), literalCounter);
-        r[i] = roomAssignment;
-        literalCounter += rooms;
-        if (verbose)
-        {
-            cout << "[VERBOSE] Created literals " << initialLiteralCounter << "-" << literalCounter - 1
-                 << " in r for class " << i << "\n";
-        }
-    }
-
-    if (verbose)
-    {
-        cout << "[VERBOSE] literalCounter:" << literalCounter << "\n";
-    }
-
-    vector<vector<int>> periodAssigned;
-    vector<vector<int>> roomAssigned;
-
-    for (long long i = 0; i < classes; i++)
-    {
-        vector<int> periodLiterals = t[i];
-        periodAssigned.push_back(periodLiterals);
-
-        vector<int> roomLiterals = r[i];
-        roomAssigned.push_back(roomLiterals);
-    }
-
-    if (verbose)
-    {
-        cout << "[VERBOSE] periodAssigned: \n";
+        cout << "[VERBOSE] period literals: \n";
         for (long long i = 0; i < classes; i++)
         {
-
-            for (long long i2 = 0; i2 < periods; i2++)
+            for (int periodLiteral : t[i])
             {
-                cout << "[" << periodAssigned[i][i2] << "]";
+                cout << "[" << periodLiteral << "]";
             }
             cout << "\n";
         }
 
-        cout << "[VERBOSE] roomAssigned: \n";
+        cout << "[VERBOSE] room literals: \n";
         for (long long i = 0; i < classes; i++)
         {
-            for (long long i2 = 0; i2 < rooms; i2++)
+            if (r[i].size() == 0)
+                cout << "[]";
+            for (int periodLiteral : r[i])
             {
-                cout << "[" << roomAssigned[i][i2] << "]";
+                cout << "[" << periodLiteral << "]";
             }
             cout << "\n";
         }
@@ -236,9 +180,8 @@ void runBenchMark()
     // Encode at-least-one period constraints
     for (long long i = 0; i < classes; i++)
     {
-        for (long long i2 = 0; i2 < periods; i2++)
+        for (int lit : t[i])
         {
-            int lit = t[i][i2];
             ipamir_add_hard(solver, lit);
         }
         ipamir_add_hard(solver, 0);
@@ -247,9 +190,10 @@ void runBenchMark()
     // Encode at-least-one room constraints
     for (long long i = 0; i < classes; i++)
     {
-        for (long long i2 = 0; i2 < rooms; i2++)
+        if (r[i].size() == 0)
+            continue;
+        for (int lit : r[i])
         {
-            int lit = r[i][i2];
             ipamir_add_hard(solver, lit);
         }
         ipamir_add_hard(solver, 0);
@@ -261,11 +205,10 @@ void runBenchMark()
     for (long long i = 0; i < classes; i++)
     {
         if (verbose)
-            cout << "[VERBOSE] Adding am1 period constraints for literals[";
+            cout << "[VERBOSE] Adding am1 period constraints for literals [";
         AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
-        for (long long i2 = 0; i2 < periods; i2++)
+        for (int lit : t[i])
         {
-            int lit = t[i][i2];
             if (verbose)
                 cout << lit << ",";
             am1Encoder.am1encoder_add(lit);
@@ -279,12 +222,17 @@ void runBenchMark()
     // Encode am1 room constraints
     for (long long i = 0; i < classes; i++)
     {
-        if (verbose)
-            cout << "[VERBOSE] Adding am1 room constraints for literals[";
-        AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
-        for (long long i2 = 0; i2 < rooms; i2++)
+        if (r[i].size() == 0)
         {
-            int lit = r[i][i2];
+            cout << "[VERBOSE] No rooms defined for class n." << i << ", skipping am1 encoding\n";
+            continue;
+        }
+
+        if (verbose)
+            cout << "[VERBOSE] Adding am1 room constraints for literals [";
+        AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
+        for (int lit : r[i])
+        {
             if (verbose)
                 cout << lit << ",";
             am1Encoder.am1encoder_add(lit);
@@ -296,26 +244,66 @@ void runBenchMark()
     }
 
     // Encode RoomConflict constraints
-    for (long long class1 = 0; class1 < classes; class1++)
+    for (long long class1Index = 0; class1Index < classes; class1Index++)
     {
-        for (long long class2 = class1 + 1; class2 < classes; class2++)
+        Class class1 = classVec[class1Index];
+        for (long long class2Index = class1Index + 1; class2Index < classes; class2Index++)
         {
-            for (long long period = 0; period < periods; period++)
+            Class class2 = classVec[class2Index];
+            for (int class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
             {
-                for (long long room = 0; room < rooms; room++)
+                Room room1 = class1.rooms[class1RoomIndex];
+                for (int class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
                 {
-                    ipamir_add_hard(solver, -t[class1][period]);
-                    ipamir_add_hard(solver, -t[class2][period]);
-                    ipamir_add_hard(solver, -r[class1][room]);
-                    ipamir_add_hard(solver, -r[class2][room]);
-                    ipamir_add_hard(solver, 0);
-                    if (verbose)
+                    Room room2 = class2.rooms[class2RoomIndex];
+                    if (room1.id != room2.id)
+                        continue;
+
+                    for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                     {
-                        cout << "[VERBOSE] Adding RoomConflict constraint: "
-                             << -t[class1][period] << ", "
-                             << -t[class2][period] << ", "
-                             << -r[class1][room] << ", "
-                             << -r[class2][room] << ", 0 \n";
+                        Timing timing1 = class1.timings[class1TimingIndex];
+                        for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                        {
+                            Timing timing2 = class2.timings[class2TimingIndex];
+                            string timing1Weeks = timing1.weeks;
+                            string timing2Weeks = timing2.weeks;
+                            string timing1Days = timing1.days;
+                            string timing2Days = timing2.days;
+                            bool overlapConstraintEncoded = false;
+                            for (int weekIndex = 0; weekIndex < weeks && !overlapConstraintEncoded; weekIndex++)
+                            {
+                                if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
+                                    continue;
+
+                                for (int dayIndex = 0; dayIndex < days && !overlapConstraintEncoded; dayIndex++)
+                                {
+                                    if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
+                                        continue;
+
+                                    int timing1EndSlot = timing1.start + timing1.length;
+                                    int timing2EndSlot = timing2.start + timing2.length;
+                                    bool overLap = (timing1.start < timing2EndSlot && timing1.start >= timing2.start) ||
+                                                   (timing2.start < timing1EndSlot && timing2.start >= timing1.start);
+                                    if (overLap)
+                                    {
+                                        ipamir_add_hard(solver, -t[class1Index][class1TimingIndex]);
+                                        ipamir_add_hard(solver, -t[class2Index][class2TimingIndex]);
+                                        ipamir_add_hard(solver, -r[class1Index][class1RoomIndex]);
+                                        ipamir_add_hard(solver, -r[class2Index][class2RoomIndex]);
+                                        ipamir_add_hard(solver, 0);
+                                        if (verbose)
+                                        {
+                                            cout << "[VERBOSE] Adding RoomConflict constraint: "
+                                                 << -t[class1Index][class1TimingIndex] << ", "
+                                                 << -t[class2Index][class2TimingIndex] << ", "
+                                                 << -r[class1Index][class1RoomIndex] << ", "
+                                                 << -r[class2Index][class2RoomIndex] << ", 0 \n";
+                                        }
+                                        overlapConstraintEncoded = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -323,28 +311,52 @@ void runBenchMark()
     }
 
     // Encode RoomUnavailability constraints
-    vector<vector<vector<vector<int>>>> roomAvailability = getRoomAvailability();
-    for (int i = 0; i < rooms; i++)
+    for (int classIndex = 0; classIndex < classVec.size(); classIndex++)
     {
-        for (int i2 = 0; i2 < weeks; i2++)
+        Class classObj = classVec[classIndex];
+        for (int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
         {
-            for (int i3 = 0; i3 < days; i3++)
+            Room room = classObj.rooms[roomIndex];
+            for (RoomUnavailability unavailability : room.unavailability)
             {
-                for (int i4 = 0; i4 < hours; i4++)
+                string roomUnavailabilityDays = unavailability.days;
+                string roomUnavailabilityWeeks = unavailability.weeks;
+                for (int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                 {
-                    if (roomAvailability[i][i2][i3][i4] == 1)
-                    {
 
-                        for (int i5 = 0; i5 < classes; i5++)
+                    bool constraintEncoded = false;
+                    Timing classTiming = classObj.timings[timingIndex];
+                    string classTimingDays = classTiming.days;
+                    string classTimingWeeks = classTiming.weeks;
+                    for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
+                    {
+                        if (roomUnavailabilityWeeks[weekIndex] == '0' || classTimingWeeks[weekIndex] == '0')
+                            continue;
+                        for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
                         {
-                            int periodIndex = i2 * days * hours + i3 * hours + i4;
-                            int timingLit = t[i5][periodIndex];
-                            int roomLit = r[i5][i];
-                            if (verbose)
-                                cout << "[VERBOSE] Adding RoomUnavailability constraint: -" << timingLit << ", -" << roomLit << ", 0 \n";
-                            ipamir_add_hard(solver, -timingLit);
-                            ipamir_add_hard(solver, -roomLit);
-                            ipamir_add_hard(solver, 0);
+                            if (roomUnavailabilityDays[dayIndex] == '0' || classTimingDays[dayIndex] == '0')
+                                continue;
+                            int roomUnavailabilityStart = unavailability.start;
+                            int roomUnavailabilityLength = unavailability.length;
+                            int roomUnavailabilityEnd = roomUnavailabilityStart + roomUnavailabilityLength;
+                            int classTimingStart = classTiming.start;
+                            int classTimingLength = classTiming.length;
+                            int classTimingEnd = classTimingStart + classTimingLength;
+                            bool overLap = (roomUnavailabilityStart < roomUnavailabilityEnd && roomUnavailabilityStart >= classTimingStart) ||
+                                           (classTimingStart < roomUnavailabilityEnd && classTimingStart >= roomUnavailabilityStart);
+
+                            if (overLap)
+                            {
+                                int timingLit = t[classIndex][timingIndex];
+                                int roomLit = r[classIndex][roomIndex];
+                                if (verbose)
+                                    cout
+                                        << "[VERBOSE] Adding RoomUnavailability constraint: -" << timingLit << ", -" << roomLit << ", 0 \n";
+                                ipamir_add_hard(solver, -timingLit);
+                                ipamir_add_hard(solver, -roomLit);
+                                ipamir_add_hard(solver, 0);
+                                constraintEncoded = true;
+                            }
                         }
                     }
                 }
@@ -356,47 +368,48 @@ void runBenchMark()
     for (Distribution sameStartDistribution : distributionsMap["SameStart"])
     {
         vector<string> distributionClasses = sameStartDistribution.classes;
-        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
-            string class1Id = distributionClasses[class1];
-            int classPeriod1Literal = courseIdLookUp[class1Id][0];
-
-            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            // TODO This and all instances of it should REALLY be refactored ASAP
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
             {
-                string class2Id = distributionClasses[class2];
-                int classPeriod2Literal = courseIdLookUp[class2Id][0];
-                for (long long week1 = 0; week1 < weeks; week1++)
-                {
-                    for (long long day1 = 0; day1 < days; day1++)
-                    {
-                        for (long long hour1 = 0; hour1 < hours; hour1++)
-                        {
-                            int periodLit1 = classPeriod1Literal +
-                                             (week1 * days * hours) +
-                                             (day1 * hours) + hour1;
-                            for (long long week2 = 0; week2 < weeks; week2++)
-                            {
-                                for (long long day2 = 0; day2 < days; day2++)
-                                {
-                                    for (long long hour2 = 0; hour2 < hours; hour2++)
-                                    {
-                                        if (hour1 == hour2)
-                                            continue;
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
 
-                                        int periodLit2 = classPeriod2Literal +
-                                                         (week2 * days * hours) +
-                                                         (day2 * hours) + hour2;
-                                        if (verbose)
-                                            cout << "[VERBOSE] Adding SameStart constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                                        ipamirAddClause(solver,
-                                                        {-periodLit1, -periodLit2},
-                                                        literalCounter,
-                                                        sameStartDistribution.required,
-                                                        sameStartDistribution.penalty);
-                                    }
-                                }
-                            }
-                        }
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    int class1TimingStart = class1.timings[class1TimingIndex].start;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        int class2TimingStart = class2.timings[class2TimingIndex].start;
+                        if (class1TimingStart == class2TimingStart)
+                            continue;
+
+                        int periodLit1 = t[class1Index][class1TimingIndex];
+                        int periodLit2 = t[class2Index][class2TimingIndex];
+                        if (verbose)
+                            cout << "[VERBOSE] Adding SameStart constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                        ipamirAddClause(solver,
+                                        {-periodLit1, -periodLit2},
+                                        literalCounter,
+                                        sameStartDistribution.required,
+                                        sameStartDistribution.penalty);
                     }
                 }
             }
@@ -404,49 +417,59 @@ void runBenchMark()
     }
 
     // Encode SameDays constraints
-    for (Distribution sameDaysDistribution : distributionsMap["SameDays"])
+    for (Distribution SameDaysDistribution : distributionsMap["SameDays"])
     {
-        vector<string> distributionClasses = sameDaysDistribution.classes;
-        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
+        vector<string> distributionClasses = SameDaysDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
-            string class1Id = distributionClasses[class1];
-            int classPeriod1Literal = courseIdLookUp[class1Id][0];
-
-            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
             {
-                string class2Id = distributionClasses[class2];
-                int classPeriod2Literal = courseIdLookUp[class2Id][0];
-                for (long long week1 = 0; week1 < weeks; week1++)
-                {
-                    for (long long day1 = 0; day1 < days; day1++)
-                    {
-                        for (long long hour1 = 0; hour1 < hours; hour1++)
-                        {
-                            int periodLit1 = classPeriod1Literal +
-                                             (week1 * days * hours) +
-                                             (day1 * hours) + hour1;
-                            for (long long week2 = 0; week2 < weeks; week2++)
-                            {
-                                for (long long day2 = 0; day2 < days; day2++)
-                                {
-                                    if (day1 == day2)
-                                        continue;
-                                    for (long long hour2 = 0; hour2 < hours; hour2++)
-                                    {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
 
-                                        int periodLit2 = classPeriod2Literal +
-                                                         (week2 * days * hours) +
-                                                         (day2 * hours) + hour2;
-                                        if (verbose)
-                                            cout << "[VERBOSE] Adding SameDays constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                                        ipamirAddClause(solver,
-                                                        {-periodLit1, -periodLit2},
-                                                        literalCounter,
-                                                        sameDaysDistribution.required,
-                                                        sameDaysDistribution.penalty);
-                                    }
-                                }
-                            }
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    string class1TimingDays = class1.timings[class1TimingIndex].days;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        string class2TimingDays = class2.timings[class2TimingIndex].days;
+                        bool is1SubSet = true;
+                        bool is2SubSet = true;
+                        for (int day = 0; day < days; day++)
+                        {
+                            if (class1TimingDays[day] == '1' && class2TimingDays[day] == '0')
+                                is1SubSet = false;
+                            if (class1TimingDays[day] == '0' && class2TimingDays[day] == '1')
+                                is2SubSet = false;
+                        }
+                        if (!is1SubSet && !is2SubSet)
+                        {
+                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            if (verbose)
+                                cout << "[VERBOSE] Adding SameDays constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            ipamirAddClause(solver,
+                                            {-periodLit1, -periodLit2},
+                                            literalCounter,
+                                            SameDaysDistribution.required,
+                                            SameDaysDistribution.penalty);
                         }
                     }
                 }
@@ -454,76 +477,56 @@ void runBenchMark()
         }
     }
 
-    // Encode WorkDay constraints
-    int maxWorkDayLength = hours;
-    for (long long week = 0; week < weeks; week++)
+    // Encode DifferentDays constraints
+    for (Distribution DifferentDaysDistribution : distributionsMap["DifferentDays"])
     {
-        for (long long day = 0; day < days; day++)
+        vector<string> distributionClasses = DifferentDaysDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
-            for (long long course1 = 0; course1 < courses; course1++)
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
             {
-                for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
-                {
-                    for (long long hour1 = 0; hour1 < hours; hour1++)
-                    {
-                        int periodLit1 = periodLiterals[course1][courseHour1][week][day] + hour1;
-
-                        for (long long course2 = course1; course2 < courses; course2++)
-                        {
-                            for (long long courseHour2 = courseHour1; courseHour2 < courseHours; courseHour2++)
-                            {
-                                for (long long hour2 = hour1; hour2 < hours; hour2++)
-                                {
-                                    int periodLit2 = periodLiterals[course2][courseHour2][week][day] + hour2;
-                                    if (maxWorkDayLength <= (abs(hour1 - hour2)))
-                                    {
-                                        if (verbose)
-                                            cout
-                                                << "[VERBOSE] Adding WorkDay constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                                        ipamir_add_hard(solver, -periodLit1);
-                                        ipamir_add_hard(solver, -periodLit2);
-                                        ipamir_add_hard(solver, 0);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
             }
-        }
-    }
 
-    // Encode NotOverLap constraints
-    for (long long week = 0; week < weeks; week++)
-    {
-        for (long long day = 0; day < days; day++)
-        {
-            for (long long hour = 0; hour < hours; hour++)
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
-                for (long long course1 = 0; course1 < courses; course1++)
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
                 {
-                    for (long long courseHour1 = 0; courseHour1 < courseHours; courseHour1++)
-                    {
-                        int periodLit1 = periodLiterals[course1][courseHour1][week][day] + hour;
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
 
-                        for (long long course2 = course1; course2 < courses; course2++)
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    string class1TimingDays = class1.timings[class1TimingIndex].days;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        string class2TimingDays = class2.timings[class2TimingIndex].days;
+                        bool is1SubSet = true;
+                        bool is2SubSet = true;
+                        for (int day = 0; day < days; day++)
                         {
-                            long long courseHour2;
-                            if (course2 == course1)
-                                courseHour2 = courseHour1;
-                            else
-                                courseHour2 = 0;
-                            for (; courseHour2 < courseHours; courseHour2++)
+                            if (class1TimingDays[day] == '1' && class2TimingDays[day] == '1')
                             {
-                                int periodLit2 = periodLiterals[course2][courseHour2][week][day] + hour;
-                                if (periodLit1 == periodLit2)
-                                    continue;
+                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
                                 if (verbose)
-                                    cout
-                                        << "[VERBOSE] Adding NotOverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                                ipamir_add_hard(solver, -periodLit1);
-                                ipamir_add_hard(solver, -periodLit2);
-                                ipamir_add_hard(solver, 0);
+                                    cout << "[VERBOSE] Adding SameDays constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                ipamirAddClause(solver,
+                                                {-periodLit1, -periodLit2},
+                                                literalCounter,
+                                                DifferentDaysDistribution.required,
+                                                DifferentDaysDistribution.penalty);
+                                break;
                             }
                         }
                     }
@@ -536,45 +539,112 @@ void runBenchMark()
     for (Distribution sameWeeksDistribution : distributionsMap["SameWeeks"])
     {
         vector<string> distributionClasses = sameWeeksDistribution.classes;
-        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
-            string class1Id = distributionClasses[class1];
-            int classPeriod1Literal = courseIdLookUp[class1Id][0];
-
-            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
             {
-                string class2Id = distributionClasses[class2];
-                int classPeriod2Literal = courseIdLookUp[class2Id][0];
-                for (long long week1 = 0; week1 < weeks; week1++)
-                {
-                    for (long long day1 = 0; day1 < days; day1++)
-                    {
-                        for (long long hour1 = 0; hour1 < hours; hour1++)
-                        {
-                            int periodLit1 = classPeriod1Literal +
-                                             (week1 * days * hours) +
-                                             (day1 * hours) + hour1;
-                            for (long long week2 = 0; week2 < weeks; week2++)
-                            {
-                                if (week1 == week2)
-                                    continue;
-                                for (long long day2 = 0; day2 < days; day2++)
-                                {
-                                    for (long long hour2 = 0; hour2 < hours; hour2++)
-                                    {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
 
-                                        int periodLit2 = classPeriod2Literal +
-                                                         (week2 * days * hours) +
-                                                         (day2 * hours) + hour2;
-                                        if (verbose)
-                                            cout << "[VERBOSE] Adding SameWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                                        ipamirAddClause(solver,
-                                                        {-periodLit1, -periodLit2},
-                                                        literalCounter,
-                                                        sameWeeksDistribution.required,
-                                                        sameWeeksDistribution.penalty);
-                                    }
-                                }
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    string class1TimingWeeks = class1.timings[class1TimingIndex].weeks;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        string class2TimingWeeks = class1.timings[class2TimingIndex].weeks;
+                        bool is1SubSet = true;
+                        bool is2SubSet = true;
+                        for (int week = 0; week < weeks; week++)
+                        {
+                            if (class1TimingWeeks[week] == '1' && class2TimingWeeks[week] == '0')
+                                is1SubSet = false;
+                            if (class1TimingWeeks[week] == '0' && class2TimingWeeks[week] == '1')
+                                is2SubSet = false;
+                        }
+                        if (!is1SubSet && !is2SubSet)
+                        {
+                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            if (verbose)
+                                cout << "[VERBOSE] Adding SameWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            ipamirAddClause(solver,
+                                            {-periodLit1, -periodLit2},
+                                            literalCounter,
+                                            sameWeeksDistribution.required,
+                                            sameWeeksDistribution.penalty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode DifferentWeeks constraints
+    for (Distribution differentWeeksDistribution : distributionsMap["DifferentWeeks"])
+    {
+        vector<string> distributionClasses = differentWeeksDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    string class1TimingWeeks = class1.timings[class1TimingIndex].weeks;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        string class2TimingWeeks = class1.timings[class2TimingIndex].weeks;
+
+                        for (int week = 0; week < weeks; week++)
+                        {
+                            if (class1TimingWeeks[week] == '1' && class2TimingWeeks[week] == '1')
+                            {
+                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                if (verbose)
+                                    cout << "[VERBOSE] Adding DifferentWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                ipamirAddClause(solver,
+                                                {-periodLit1, -periodLit2},
+                                                literalCounter,
+                                                differentWeeksDistribution.required,
+                                                differentWeeksDistribution.penalty);
+                                break;
                             }
                         }
                     }
@@ -584,34 +654,341 @@ void runBenchMark()
     }
 
     // Encode SameRoom constraints
-    for (Distribution sameRoomsDistribution : distributionsMap["SameRoom"])
+    for (Distribution sameRoomDistribution : distributionsMap["SameRoom"])
     {
-        vector<string> distributionClasses = sameRoomsDistribution.classes;
-        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
+        vector<string> distributionClasses = sameRoomDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
-            string class1Id = distributionClasses[class1];
-            int classRoom1Literal = courseIdLookUp[class1Id][1];
-
-            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
             {
-                string class2Id = distributionClasses[class2];
-                int classRoom2Literal = courseIdLookUp[class2Id][1];
-                for (long long room1 = 0; room1 < rooms; room1++)
-                {
-                    int roomLit1 = classRoom1Literal + room1;
-                    for (long long room2 = 0; room2 < rooms; room2++)
-                    {
-                        if (room1 == room2)
-                            continue;
-                        int roomLit2 = classRoom2Literal + room2;
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
 
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+
+                for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
+                {
+                    string class1RoomId = class1.rooms[class1RoomIndex].id;
+                    for (size_t class2RoomIndex = 0; class2RoomIndex < class1.rooms.size(); class2RoomIndex++)
+                    {
+                        string class2RoomId = class2.rooms[class2RoomIndex].id;
+                        if (class1RoomId == class2RoomId)
+                            continue;
+
+                        int roomLit1 = r[class1LiteralIndex][class1RoomIndex];
+                        int roomLit2 = r[class2LiteralIndex][class2RoomIndex];
                         if (verbose)
                             cout << "[VERBOSE] Adding SameRoom constraint: -" << roomLit1 << ", -" << roomLit2 << ", 0 \n";
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
-                                        sameRoomsDistribution.required,
-                                        sameRoomsDistribution.penalty);
+                                        sameRoomDistribution.required,
+                                        sameRoomDistribution.penalty);
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode DifferentRoom constraints
+    for (Distribution differentRoomDistribution : distributionsMap["DifferentRoom"])
+    {
+        vector<string> distributionClasses = differentRoomDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+
+                for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
+                {
+                    string class1RoomId = class1.rooms[class1RoomIndex].id;
+                    for (size_t class2RoomIndex = 0; class2RoomIndex < class1.rooms.size(); class2RoomIndex++)
+                    {
+                        string class2RoomId = class2.rooms[class2RoomIndex].id;
+                        if (class1RoomId != class2RoomId)
+                            continue;
+                        int roomLit1 = r[class1LiteralIndex][class1RoomIndex];
+                        int roomLit2 = r[class2LiteralIndex][class2RoomIndex];
+                        if (verbose)
+                            cout << "[VERBOSE] Adding DifferentRoom constraint: -" << roomLit1 << ", -" << roomLit2 << ", 0 \n";
+                        ipamirAddClause(solver,
+                                        {-roomLit1, -roomLit2},
+                                        literalCounter,
+                                        differentRoomDistribution.required,
+                                        differentRoomDistribution.penalty);
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode OverLap constraints
+    // TODO: refactor this ASAP, a single for-loop shouldn't be 100 lines long
+    for (Distribution overLapDistribution : distributionsMap["OverLap"])
+    {
+        vector<string> distributionClasses = overLapDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    Timing timing1 = class1.timings[class1TimingIndex];
+                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        Timing timing2 = class2.timings[class2TimingIndex];
+                        bool constraintEncoded = false;
+                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
+                        {
+                            string timing1Weeks = timing1.weeks;
+                            string timing2Weeks = timing2.weeks;
+                            if (timing1Weeks[weekIndex] == '0' && timing2Weeks[weekIndex] == '0')
+                                continue;
+                            if (timing1Weeks[weekIndex] != timing2Weeks[weekIndex])
+                            {
+                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                if (verbose)
+                                    cout
+                                        << "[VERBOSE] Adding OverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                ipamirAddClause(solver,
+                                                {-periodLit1, -periodLit2},
+                                                literalCounter,
+                                                overLapDistribution.required,
+                                                overLapDistribution.penalty);
+                                constraintEncoded = true;
+                            }
+                            for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
+                            {
+                                string timing1Days = timing1.days;
+                                string timing2Days = timing2.days;
+                                if (timing1Days[dayIndex] == '0' && timing2Days[dayIndex] == '0')
+                                    continue;
+                                if (timing1Days[dayIndex] != timing2Days[dayIndex])
+                                {
+                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    if (verbose)
+                                        cout
+                                            << "[VERBOSE] Adding OverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    ipamirAddClause(solver,
+                                                    {-periodLit1, -periodLit2},
+                                                    literalCounter,
+                                                    overLapDistribution.required,
+                                                    overLapDistribution.penalty);
+                                    constraintEncoded = true;
+                                }
+                                int timing1EndSlot = timing1.start + timing1.length;
+                                int timing2EndSlot = timing2.start + timing2.length;
+                                bool overLap = (timing1.start < timing2EndSlot) &&
+                                               (timing2.start < timing1EndSlot);
+                                if (!overLap)
+                                {
+                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    if (verbose)
+                                        cout
+                                            << "[VERBOSE] Adding OverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    ipamirAddClause(solver,
+                                                    {-periodLit1, -periodLit2},
+                                                    literalCounter,
+                                                    overLapDistribution.required,
+                                                    overLapDistribution.penalty);
+                                    constraintEncoded = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode NotOverLap constraints
+    for (Distribution notOverLapDistribution : distributionsMap["NotOverLap"])
+    {
+        vector<string> distributionClasses = notOverLapDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    Timing timing1 = class1.timings[class1TimingIndex];
+
+                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        Timing timing2 = class2.timings[class2TimingIndex];
+                        bool constraintEncoded = false;
+                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
+                        {
+                            string timing1Weeks = timing1.weeks;
+                            string timing2Weeks = timing2.weeks;
+                            if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
+                                continue;
+                            for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
+                            {
+                                string timing1Days = timing1.days;
+                                string timing2Days = timing2.days;
+                                if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
+                                    continue;
+                                int timing1EndSlot = timing1.start + timing1.length;
+                                int timing2EndSlot = timing2.start + timing2.length;
+                                bool overLap = (timing1.start < timing2EndSlot) &&
+                                               (timing2.start < timing1EndSlot);
+                                if (overLap)
+                                {
+                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    if (verbose)
+                                        cout
+                                            << "[VERBOSE] Adding NotOverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    ipamirAddClause(solver,
+                                                    {-periodLit1, -periodLit2},
+                                                    literalCounter,
+                                                    notOverLapDistribution.required,
+                                                    notOverLapDistribution.penalty);
+                                    constraintEncoded = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode WorkDay constraints
+    int S = hours;
+    for (Distribution workDayDistribution : distributionsMap["WorkDay"])
+    {
+        vector<string> distributionClasses = workDayDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    Timing timing1 = class1.timings[class1TimingIndex];
+
+                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        Timing timing2 = class2.timings[class2TimingIndex];
+                        for (int dayIndex = 0; dayIndex < days; dayIndex++)
+                        {
+                            string timing1Days = timing1.days;
+                            string timing2Days = timing2.days;
+                            if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
+                                continue;
+
+                            int timing1End = timing1.start + timing1.length;
+                            int timing2End = timing2.start + timing2.length;
+                            if (S < max(timing1End, timing2End) - min(timing1.start, timing2.start))
+                            {
+                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                if (verbose)
+                                    cout
+                                        << "[VERBOSE] Adding WorkDay constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                ipamirAddClause(solver,
+                                                {-periodLit1, -periodLit2},
+                                                literalCounter,
+                                                workDayDistribution.required,
+                                                workDayDistribution.penalty);
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -619,40 +996,116 @@ void runBenchMark()
     }
 
     // Encode Precedence constraints
+    // TODO: refactor this, too long and convoluted
     for (Distribution precedenceDistribution : distributionsMap["Precedence"])
     {
         vector<string> distributionClasses = precedenceDistribution.classes;
-        for (size_t class1 = 0; class1 < distributionClasses.size(); class1++)
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
-            string class1Id = distributionClasses[class1];
-            int classPeriod1Literal = courseIdLookUp[class1Id][0];
-
-            for (size_t class2 = class1 + 1; class2 < distributionClasses.size(); class2++)
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
             {
-                string class2Id = distributionClasses[class2];
-                int classPeriod2Literal = courseIdLookUp[class2Id][0];
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
 
-                int maxPeriodOffset = periods;
-
-                for (long long period1Offset = 0; period1Offset < maxPeriodOffset; period1Offset++)
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
                 {
-                    int periodLit1 = classPeriod1Literal + period1Offset;
-                    for (long long period2Offset = 0; period2Offset < period1Offset; period2Offset++)
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    Timing timing1 = class1.timings[class1TimingIndex];
+
+                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
-                        int periodLit2 = classPeriod2Literal + period2Offset;
-                        if (verbose)
-                            cout << "[VERBOSE] v.2 Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
-                        ipamirAddClause(solver,
-                                        {-periodLit1, -periodLit2},
-                                        literalCounter,
-                                        precedenceDistribution.required,
-                                        precedenceDistribution.penalty);
+                        Timing timing2 = class2.timings[class2TimingIndex];
+                        int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                        int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                        bool constraintEncoded = false;
+                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
+                        {
+
+                            if ((timing1.weeks[weekIndex] == '0' && timing2.weeks[weekIndex] == '0') ||
+                                (timing1.weeks[weekIndex] == '1' && timing2.weeks[weekIndex] == '0'))
+                                continue;
+                            if (timing2.weeks[weekIndex] == '1')
+                            {
+                                for (int timing1WeekIndex = weekIndex + 1; timing1WeekIndex < weeks && !constraintEncoded; timing1WeekIndex++)
+                                {
+                                    if (timing1.weeks[timing1WeekIndex] == '1')
+                                    {
+                                        if (verbose)
+                                            cout
+                                                << "[VERBOSE] Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        ipamirAddClause(solver,
+                                                        {-periodLit1, -periodLit2},
+                                                        literalCounter,
+                                                        precedenceDistribution.required,
+                                                        precedenceDistribution.penalty);
+                                        constraintEncoded = true;
+                                    }
+                                }
+                            }
+                            if (timing1.weeks[weekIndex] == '1' && timing2.weeks[weekIndex] == '1')
+                            {
+                                for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
+                                {
+
+                                    if ((timing1.days[dayIndex] == '0' && timing2.days[dayIndex] == '0') ||
+                                        (timing1.days[dayIndex] == '1' && timing2.days[dayIndex] == '0'))
+                                        continue;
+                                    if (timing2.days[dayIndex] == '1')
+                                    {
+                                        for (int timing1DayIndex = dayIndex + 1; timing1DayIndex < days && !constraintEncoded; timing1DayIndex++)
+                                        {
+                                            if (timing1.days[timing1DayIndex] == '1')
+                                            {
+                                                if (verbose)
+                                                    cout
+                                                        << "[VERBOSE] Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                                ipamirAddClause(solver,
+                                                                {-periodLit1, -periodLit2},
+                                                                literalCounter,
+                                                                precedenceDistribution.required,
+                                                                precedenceDistribution.penalty);
+                                                constraintEncoded = true;
+                                            }
+                                        }
+                                    }
+                                    if (timing1.days[dayIndex] == '1' && timing2.days[dayIndex] == '1')
+                                    {
+                                        int timing1End = timing1.start + timing1.length;
+                                        if (timing1End <= timing2.start)
+                                            continue;
+                                        if (verbose)
+                                            cout
+                                                << "[VERBOSE] Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        ipamirAddClause(solver,
+                                                        {-periodLit1, -periodLit2},
+                                                        literalCounter,
+                                                        precedenceDistribution.required,
+                                                        precedenceDistribution.penalty);
+                                        constraintEncoded = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
-
     // Print answer and ask user for input
     while (true)
     {
@@ -666,41 +1119,56 @@ void runBenchMark()
         if (code == 30)
         {
             cout << "Assignment:\n";
-            for (size_t i = 0; i < courseNames.size(); i++)
+
+            for (int classIndex = 0; classIndex < classes; classIndex++)
             {
-                vector<string> classNames = courseNames[i];
-                int classIndex = 0;
-                for (string className : classNames)
+                Class classObj = classVec[classIndex];
+                string classId = classObj.id;
+                string timingWeeks,
+                    timingDays;
+                int timingStart,
+                    timingLength;
+
+                for (int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                 {
-
-                    int period = 0;
-                    int room = 0;
-                    for (int i2 = 0; i2 < periods; i2++)
+                    int timingLit = t[classIndex][timingIndex];
+                    if (0 < ipamir_val_lit(solver, timingLit))
                     {
-                        int periodLit = t[i * courses + classIndex][i2];
-                        if (0 < ipamir_val_lit(solver, periodLit))
-                        {
-                            period = i2;
-                            if (verbose)
-                                cout << "[VERBOSE] periodLit:" << periodLit << "=1 \n";
-                            break;
-                        }
+                        Timing timing = classObj.timings[timingIndex];
+                        timingWeeks = timing.weeks;
+                        timingDays = timing.days;
+                        timingStart = timing.start;
+                        timingLength = timing.length;
+                        if (verbose)
+                            cout << "[VERBOSE] timingLit:" << timingLit << "=1 \n";
                     }
-
-                    for (int i2 = 0; i2 < rooms; i2++)
-                    {
-                        int roomLit = r[i * courses + classIndex][i2];
-                        if (0 < ipamir_val_lit(solver, roomLit))
-                        {
-                            room = i2;
-                            if (verbose)
-                                cout << "[VERBOSE] roomLit:" << roomLit << "=1 \n";
-                            break;
-                        }
-                    }
-                    classIndex++;
-                    cout << "Class " << className << " is assigned to room " << room << " in period " << period << "\n";
                 }
+
+                string roomId;
+                if (classObj.rooms.size() == 0)
+                {
+                    roomId = "[/]";
+                    if (verbose)
+                        cout << "[VERBOSE] roomLit: - \n";
+                }
+                for (int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+                {
+                    int roomLit = r[classIndex][roomIndex];
+                    if (0 < ipamir_val_lit(solver, roomLit))
+                    {
+                        Room room = classObj.rooms[roomIndex];
+                        roomId = room.id;
+                        if (verbose)
+                            cout << "[VERBOSE] roomLit:" << roomLit << "=1 \n";
+                    }
+                }
+
+                cout << "Class " << classId
+                     << " is assigned to weeks: " << timingWeeks
+                     << ", days: " << timingDays
+                     << ", starting at slot: " << timingStart
+                     << ", for " << timingLength
+                     << " slot(s) to room " << roomId << "\n";
             }
         }
 

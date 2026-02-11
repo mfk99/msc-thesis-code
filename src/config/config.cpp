@@ -14,11 +14,19 @@ using namespace pugi;
 largely adheres to the ITC 2019 data format.
 More info available at: https://www.itc2019.org/format
 */
+struct RoomUnavailability
+{
+    string days;
+    string weeks;
+    int start;
+    int length;
+};
 
 struct Room
 {
     string id;
     int penalty;
+    vector<RoomUnavailability> unavailability;
 };
 
 struct Timing
@@ -32,6 +40,7 @@ struct Timing
 
 struct Class
 {
+    string id;
     vector<Room> rooms;
     vector<Timing> timings;
 };
@@ -147,6 +156,12 @@ void generateConfig(vector<int> configVariables)
         }
     }
 
+    // Add blank DifferentDays constraint
+    xml_node differentDaysXmlNode = distributionsXmlNode.append_child("distribution");
+    differentDaysXmlNode.append_attribute("type") = "DifferentDays";
+    differentDaysXmlNode.append_attribute("required") = "false";
+    differentDaysXmlNode.append_attribute("penalty") = "0";
+
     // Add default SameWeeks constraint
     for (int course = 0; course < courses; course++)
     {
@@ -160,18 +175,30 @@ void generateConfig(vector<int> configVariables)
         }
     }
 
-    // Add default SameRooms constraint
+    // Add blank DifferentWeeks constraint
+    xml_node differentWeeksXmlNode = distributionsXmlNode.append_child("distribution");
+    differentWeeksXmlNode.append_attribute("type") = "DifferentWeeks";
+    differentWeeksXmlNode.append_attribute("required") = "false";
+    differentWeeksXmlNode.append_attribute("penalty") = "0";
+
+    // Add default SameRoom constraint
     for (int course = 0; course < courses; course++)
     {
-        xml_node precedenceXmlNode = distributionsXmlNode.append_child("distribution");
-        precedenceXmlNode.append_attribute("type") = "SameRoom";
-        precedenceXmlNode.append_attribute("required") = "true";
+        xml_node sameRoomXmlNode = distributionsXmlNode.append_child("distribution");
+        sameRoomXmlNode.append_attribute("type") = "SameRoom";
+        sameRoomXmlNode.append_attribute("required") = "true";
         for (string classId : classIds[course])
         {
-            xml_node classXmlNode = precedenceXmlNode.append_child("class");
+            xml_node classXmlNode = sameRoomXmlNode.append_child("class");
             classXmlNode.append_attribute("id") = classId;
         }
     }
+
+    // Add blank DifferentRooms constraint
+    xml_node differentRoomXmlNode = distributionsXmlNode.append_child("distribution");
+    differentRoomXmlNode.append_attribute("type") = "DifferentRoom";
+    differentRoomXmlNode.append_attribute("required") = "false";
+    differentRoomXmlNode.append_attribute("penalty") = "0";
 
     // Add Precedence constraint
     for (int course = 0; course < courses; course++)
@@ -268,13 +295,28 @@ map<string, Class> getClasses()
                 for (xml_node classNode : subpartNode.children())
                 {
                     Class newClass;
+                    newClass.id = classNode.attribute("id").as_string();
 
                     vector<Room> newRoomVector;
                     for (xml_node roomNode : classNode.children("room"))
                     {
                         Room newRoom;
                         newRoom.id = roomNode.attribute("id").as_string();
-                        newRoom.penalty = roomNode.attribute("penalty").as_int();
+                        newRoom.penalty = roomNode.attribute(" penalty ").as_int();
+
+                        vector<RoomUnavailability>
+                            unavailabilityVec;
+                        xml_node roomXmlNode = doc.child("problem").child("rooms").find_child_by_attribute("room", "id", newRoom.id.c_str());
+                        for (xml_node unavailabilityXmlNode : roomXmlNode.children("unavailable"))
+                        {
+                            RoomUnavailability unavailability;
+                            unavailability.days = unavailabilityXmlNode.attribute("days").as_string();
+                            unavailability.weeks = unavailabilityXmlNode.attribute("weeks").as_string();
+                            unavailability.start = unavailabilityXmlNode.attribute("start").as_int();
+                            unavailability.length = unavailabilityXmlNode.attribute("length").as_int();
+                            unavailabilityVec.push_back(unavailability);
+                        }
+                        newRoom.unavailability = unavailabilityVec;
                         newRoomVector.push_back(newRoom);
                     }
 
