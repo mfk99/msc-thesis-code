@@ -1572,7 +1572,7 @@ void runBenchMark()
                                 int breakAmount = 0;
                                 int timing1End = timing1.start + timing1.length;
                                 int timing2End = timing2.start + timing2.length;
-                                int breakLength = max(timing1End - timing2.start, timing2End - timing1.start);
+                                int breakLength = min(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
 
                                 if (maxBreaksS < breakLength)
                                 {
@@ -1586,6 +1586,84 @@ void runBenchMark()
                                                     literalCounter,
                                                     maxBreaksDistribution.required,
                                                     maxBreaksDistribution.penalty);
+                                    constraintEncoded = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode MaxBlocks Constraints
+    // Max n.o. blocks
+    int maxBlocksM = 5;
+    // Required break length
+    int maxBlocksS = 2;
+    for (Distribution maxBlocksDistribution : distributionsMap["MaxBlocks"])
+    {
+        vector<string> distributionClasses = maxBlocksDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    Timing timing1 = class1.timings[class1TimingIndex];
+                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        Timing timing2 = class2.timings[class2TimingIndex];
+                        bool constraintEncoded = false;
+                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
+                        {
+                            string timing1Weeks = timing1.weeks;
+                            string timing2Weeks = timing2.weeks;
+                            if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
+                                continue;
+
+                            for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
+                            {
+                                string timing1Days = timing1.days;
+                                string timing2Days = timing2.days;
+                                if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
+                                    continue;
+
+                                int timing1End = timing1.start + timing1.length;
+                                int timing2End = timing2.start + timing2.length;
+                                int breakLength = min(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
+                                int blockLength = max(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
+                                if (maxBlocksM < blockLength && breakLength < maxBlocksS)
+                                {
+                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    if (verbose)
+                                        cout
+                                            << "[VERBOSE] Adding MaxBlocks(" << maxBlocksM << "," << maxBlocksS << ") constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    ipamirAddClause(solver,
+                                                    {-periodLit1, -periodLit2},
+                                                    literalCounter,
+                                                    maxBlocksDistribution.required,
+                                                    maxBlocksDistribution.penalty);
                                     constraintEncoded = true;
                                 }
                             }
