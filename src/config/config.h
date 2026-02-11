@@ -16,6 +16,7 @@ struct Room
     std::string id;
     int penalty;
     std::vector<RoomUnavailability> unavailability;
+    std::map<std::string, int> travelTimes;
 };
 
 struct Timing

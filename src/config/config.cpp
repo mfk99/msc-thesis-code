@@ -27,6 +27,7 @@ struct Room
     string id;
     int penalty;
     vector<RoomUnavailability> unavailability;
+    map<string, int> travelTimes;
 };
 
 struct Timing
@@ -304,8 +305,7 @@ map<string, Class> getClasses()
                         newRoom.id = roomNode.attribute("id").as_string();
                         newRoom.penalty = roomNode.attribute(" penalty ").as_int();
 
-                        vector<RoomUnavailability>
-                            unavailabilityVec;
+                        vector<RoomUnavailability> unavailabilityVec;
                         xml_node roomXmlNode = doc.child("problem").child("rooms").find_child_by_attribute("room", "id", newRoom.id.c_str());
                         for (xml_node unavailabilityXmlNode : roomXmlNode.children("unavailable"))
                         {
@@ -317,6 +317,18 @@ map<string, Class> getClasses()
                             unavailabilityVec.push_back(unavailability);
                         }
                         newRoom.unavailability = unavailabilityVec;
+
+                        map<string, int> travelTimeMap;
+                        for (xml_node travelTimeXmlNode : roomXmlNode.children("travel"))
+                        {
+                            string travelDestinationId = travelTimeXmlNode.attribute("room").as_string();
+                            int travelTime = travelTimeXmlNode.attribute("value").as_int();
+                            cout << "travelDestinationId:" << travelDestinationId << "\n";
+                            cout << "travelTime:" << travelTime << "\n";
+                            travelTimeMap[travelDestinationId] = travelTime;
+                        }
+                        newRoom.travelTimes = travelTimeMap;
+
                         newRoomVector.push_back(newRoom);
                     }
 
