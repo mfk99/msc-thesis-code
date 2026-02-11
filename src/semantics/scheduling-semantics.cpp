@@ -416,6 +416,113 @@ void runBenchMark()
         }
     }
 
+    // Encode SameTime constraints
+    for (Distribution sameTimeDistribution : distributionsMap["SameTime"])
+    {
+        vector<string> distributionClasses = sameTimeDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    int class1TimingStart = class1.timings[class1TimingIndex].start;
+                    int class1TimingEnd = class1TimingStart + class1.timings[class1TimingIndex].length;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        int class2TimingStart = class2.timings[class2TimingIndex].start;
+                        int class2TimingEnd = class2TimingStart + class2.timings[class2TimingIndex].length;
+                        if (!((class1TimingStart <= class2TimingStart && class2TimingEnd <= class1TimingEnd) ||
+                              (class2TimingStart <= class1TimingStart && class1TimingEnd <= class2TimingEnd)))
+                        {
+                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            if (verbose)
+                                cout << "[VERBOSE] Adding SameTime constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            ipamirAddClause(solver,
+                                            {-periodLit1, -periodLit2},
+                                            literalCounter,
+                                            sameTimeDistribution.required,
+                                            sameTimeDistribution.penalty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Encode DifferentTime constraints
+    for (Distribution differentTimeDistribution : distributionsMap["DifferentTime"])
+    {
+        vector<string> distributionClasses = differentTimeDistribution.classes;
+        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        {
+            string class1Id = distributionClasses[class1Index];
+            Class class1 = classMap[class1Id];
+            int class1LiteralIndex = 0;
+            for (Class classObj : classVec)
+            {
+                if (classObj.id == class1.id)
+                    break;
+                class1LiteralIndex++;
+            }
+
+            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            {
+                string class2Id = distributionClasses[class2Index];
+                Class class2 = classMap[class2Id];
+                int class2LiteralIndex = 0;
+                for (Class classObj : classVec)
+                {
+                    if (classObj.id == class2.id)
+                        break;
+                    class2LiteralIndex++;
+                }
+                for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                {
+                    int class1TimingStart = class1.timings[class1TimingIndex].start;
+                    int class1TimingEnd = class1TimingStart + class1.timings[class1TimingIndex].length;
+                    for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    {
+                        int class2TimingStart = class2.timings[class2TimingIndex].start;
+                        int class2TimingEnd = class2TimingStart + class2.timings[class2TimingIndex].length;
+                        if (!(class1TimingEnd <= class2TimingStart || class2TimingEnd <= class1TimingStart))
+                        {
+                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            if (verbose)
+                                cout << "[VERBOSE] Adding DifferentTime constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            ipamirAddClause(solver,
+                                            {-periodLit1, -periodLit2},
+                                            literalCounter,
+                                            differentTimeDistribution.required,
+                                            differentTimeDistribution.penalty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Encode SameDays constraints
     for (Distribution SameDaysDistribution : distributionsMap["SameDays"])
     {
