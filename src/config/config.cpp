@@ -323,8 +323,6 @@ map<string, Class> getClasses()
                         {
                             string travelDestinationId = travelTimeXmlNode.attribute("room").as_string();
                             int travelTime = travelTimeXmlNode.attribute("value").as_int();
-                            cout << "travelDestinationId:" << travelDestinationId << "\n";
-                            cout << "travelTime:" << travelTime << "\n";
                             travelTimeMap[travelDestinationId] = travelTime;
                         }
                         newRoom.travelTimes = travelTimeMap;

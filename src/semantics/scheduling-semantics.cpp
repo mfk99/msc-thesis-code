@@ -224,7 +224,8 @@ void runBenchMark()
     {
         if (r[i].size() == 0)
         {
-            cout << "[VERBOSE] No rooms defined for class n." << i << ", skipping am1 encoding\n";
+            if (verbose)
+                cout << "[VERBOSE] No rooms defined for class n." << i << ", skipping am1 encoding\n";
             continue;
         }
 
