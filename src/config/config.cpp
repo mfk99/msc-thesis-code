@@ -303,7 +303,7 @@ map<string, Class> getClasses()
                     {
                         Room newRoom;
                         newRoom.id = roomNode.attribute("id").as_string();
-                        newRoom.penalty = roomNode.attribute(" penalty ").as_int();
+                        newRoom.penalty = roomNode.attribute("penalty").as_int();
 
                         vector<RoomUnavailability> unavailabilityVec;
                         xml_node roomXmlNode = doc.child("problem").child("rooms").find_child_by_attribute("room", "id", newRoom.id.c_str());

@@ -244,6 +244,31 @@ void runBenchMark()
         am1Encoder.~AM1Encoder();
     }
 
+    // Encode penalties
+    for (long long classIndex = 0; classIndex < classes; classIndex++)
+    {
+        Class classObj = classVec[classIndex];
+        for (long long timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
+        {
+            Timing timing = classObj.timings[timingIndex];
+            if (timing.penalty != 0)
+            {
+                int timingLit = t[classIndex][timingIndex];
+                ipamir_add_soft_lit(solver, timingLit, timing.penalty);
+            }
+        }
+
+        for (long long roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+        {
+            Room room = classObj.rooms[roomIndex];
+            if (room.penalty != 0)
+            {
+                int roomLit = r[classIndex][roomIndex];
+                ipamir_add_soft_lit(solver, roomLit, room.penalty);
+            }
+        }
+    }
+
     // Encode RoomConflict constraints
     for (long long class1Index = 0; class1Index < classes; class1Index++)
     {
