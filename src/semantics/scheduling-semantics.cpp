@@ -255,6 +255,8 @@ void runBenchMark()
             {
                 int timingLit = t[classIndex][timingIndex];
                 ipamir_add_soft_lit(solver, timingLit, timing.penalty);
+                if (verbose)
+                    cout << "Adding penalty: " << timing.penalty << " to timing literal: " << timingLit << "\n";
             }
         }
 
@@ -265,6 +267,8 @@ void runBenchMark()
             {
                 int roomLit = r[classIndex][roomIndex];
                 ipamir_add_soft_lit(solver, roomLit, room.penalty);
+                if (verbose)
+                    cout << "Adding penalty: " << room.penalty << " to room literal: " << roomLit << "\n";
             }
         }
     }
