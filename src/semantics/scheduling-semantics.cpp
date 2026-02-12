@@ -1717,7 +1717,8 @@ void runBenchMark()
         if (code == 30)
         {
             cout << "Assignment:\n";
-
+            uint64_t penalty = ipamir_val_obj(solver);
+            cout << "Penalty incurred by the solution: " << penalty << "\n";
             for (int classIndex = 0; classIndex < classes; classIndex++)
             {
                 Class classObj = classVec[classIndex];
