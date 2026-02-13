@@ -8,6 +8,7 @@ SRCS = \
  src/scheduling-encoding-generator/scheduling-encoding-generator.cpp \
  src/config/config.cpp \
  src/am1/am1-encoder.cpp \
+ src/logging/logging.cpp \
  libs/pugixml-1.15/src/pugixml.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 

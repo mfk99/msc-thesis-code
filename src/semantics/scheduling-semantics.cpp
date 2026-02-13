@@ -5,6 +5,7 @@
 #include <string>
 #include <chrono>
 #include <numeric>
+#include "../logging/logging.h"
 #include "../input-parser/input-parser.h"
 #include "../config/config.h"
 #include "../am1/am1-encoder.h"
@@ -52,8 +53,7 @@ void ipamirAddSoftClause(void *solver, vector<int> clause, uint32_t &literalCoun
 {
     if (clause.size() == 1)
     {
-        if (verbose)
-            cout << "[VERBOSE] Adding a unit soft literal " << clause[0] << " with weight " << penalty << "\n";
+        verboseLog("Adding a unit soft literal " + to_string(clause[0]) + " with weight " + to_string(penalty));
         ipamir_add_soft_lit(solver, clause[0], penalty);
         return;
     }
@@ -142,39 +142,16 @@ void runBenchMark()
         r.push_back(roomLiterals);
     }
 
-    if (verbose)
-        cout << "[VERBOSE] Creating clauses for "
-             << classes << " classes with "
-             << periods << " time periods and "
-             << rooms << " rooms.\n";
+    verboseLog("Creating clauses for " +
+               to_string(classes) + " classes with " +
+               to_string(periods) + " time periods and " +
+               to_string(rooms) + " rooms.");
 
     // Map of distributions, used for generating distribution encodings
     map<string, vector<Distribution>> distributionsMap = getDistributions();
 
-    if (verbose)
-    {
-        cout << "[VERBOSE] period literals: \n";
-        for (long long i = 0; i < classes; i++)
-        {
-            for (int periodLiteral : t[i])
-            {
-                cout << "[" << periodLiteral << "]";
-            }
-            cout << "\n";
-        }
-
-        cout << "[VERBOSE] room literals: \n";
-        for (long long i = 0; i < classes; i++)
-        {
-            if (r[i].size() == 0)
-                cout << "[]";
-            for (int periodLiteral : r[i])
-            {
-                cout << "[" << periodLiteral << "]";
-            }
-            cout << "\n";
-        }
-    }
+    logTimingLiterals(t);
+    logRoomLiterals(r);
 
     // Encode at-least-one period constraints
     for (long long i = 0; i < classes; i++)
@@ -254,8 +231,7 @@ void runBenchMark()
             {
                 int timingLit = t[classIndex][timingIndex];
                 ipamir_add_soft_lit(solver, timingLit, timing.penalty);
-                if (verbose)
-                    cout << "[VERBOSE] Adding penalty: " << timing.penalty << " to timing literal: " << timingLit << "\n";
+                verboseLog("Adding penalty: " + to_string(timing.penalty) + " to timing literal: " + to_string(timingLit));
             }
         }
 
@@ -266,8 +242,7 @@ void runBenchMark()
             {
                 int roomLit = r[classIndex][roomIndex];
                 ipamir_add_soft_lit(solver, roomLit, room.penalty);
-                if (verbose)
-                    cout << "[VERBOSE] Adding penalty: " << room.penalty << " to room literal: " << roomLit << "\n";
+                verboseLog("Adding penalty: " + to_string(room.penalty) + " to room literal: " + to_string(roomLit));
             }
         }
     }
@@ -320,14 +295,11 @@ void runBenchMark()
                                         ipamir_add_hard(solver, -r[class1Index][class1RoomIndex]);
                                         ipamir_add_hard(solver, -r[class2Index][class2RoomIndex]);
                                         ipamir_add_hard(solver, 0);
-                                        if (verbose)
-                                        {
-                                            cout << "[VERBOSE] Adding RoomConflict constraint: "
-                                                 << -t[class1Index][class1TimingIndex] << ", "
-                                                 << -t[class2Index][class2TimingIndex] << ", "
-                                                 << -r[class1Index][class1RoomIndex] << ", "
-                                                 << -r[class2Index][class2RoomIndex] << ", 0 \n";
-                                        }
+                                        verboseLog("Adding RoomConflict constraint: " +
+                                                   to_string(-t[class1Index][class1TimingIndex]) + ", " +
+                                                   to_string(-t[class2Index][class2TimingIndex]) + ", " +
+                                                   to_string(-r[class1Index][class1RoomIndex]) + ", " +
+                                                   to_string(-r[class2Index][class2RoomIndex]) + ", 0");
                                         overlapConstraintEncoded = true;
                                     }
                                 }
@@ -378,9 +350,7 @@ void runBenchMark()
                             {
                                 int timingLit = t[classIndex][timingIndex];
                                 int roomLit = r[classIndex][roomIndex];
-                                if (verbose)
-                                    cout
-                                        << "[VERBOSE] Adding RoomUnavailability constraint: -" << timingLit << ", -" << roomLit << ", 0 \n";
+                                verboseLog("Adding RoomUnavailability constraint: -" + to_string(timingLit) + ", -" + to_string(roomLit) + ", 0");
                                 ipamir_add_hard(solver, -timingLit);
                                 ipamir_add_hard(solver, -roomLit);
                                 ipamir_add_hard(solver, 0);
@@ -432,8 +402,7 @@ void runBenchMark()
 
                         int periodLit1 = t[class1Index][class1TimingIndex];
                         int periodLit2 = t[class2Index][class2TimingIndex];
-                        if (verbose)
-                            cout << "[VERBOSE] Adding SameStart constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                        verboseLog("Adding SameStart constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-periodLit1, -periodLit2},
                                         literalCounter,
@@ -485,8 +454,7 @@ void runBenchMark()
                         {
                             int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                             int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                            if (verbose)
-                                cout << "[VERBOSE] Adding SameTime constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            verboseLog("Adding SameTime constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
@@ -538,8 +506,7 @@ void runBenchMark()
                         {
                             int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                             int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                            if (verbose)
-                                cout << "[VERBOSE] Adding DifferentTime constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            verboseLog("Adding DifferentTime constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
@@ -599,8 +566,7 @@ void runBenchMark()
                         {
                             int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                             int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                            if (verbose)
-                                cout << "[VERBOSE] Adding SameDays constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            verboseLog("Adding SameDays constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
@@ -655,8 +621,7 @@ void runBenchMark()
                             {
                                 int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                 int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                if (verbose)
-                                    cout << "[VERBOSE] Adding SameDays constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                verboseLog("Adding SameDays constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0 \n");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
@@ -718,8 +683,7 @@ void runBenchMark()
                         {
                             int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                             int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                            if (verbose)
-                                cout << "[VERBOSE] Adding SameWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                            verboseLog("Adding SameWeeks constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
@@ -773,8 +737,7 @@ void runBenchMark()
                             {
                                 int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                 int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                if (verbose)
-                                    cout << "[VERBOSE] Adding DifferentWeeks constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                verboseLog("Adding DifferentWeeks constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
@@ -828,8 +791,7 @@ void runBenchMark()
 
                         int roomLit1 = r[class1LiteralIndex][class1RoomIndex];
                         int roomLit2 = r[class2LiteralIndex][class2RoomIndex];
-                        if (verbose)
-                            cout << "[VERBOSE] Adding SameRoom constraint: -" << roomLit1 << ", -" << roomLit2 << ", 0 \n";
+                        verboseLog("Adding SameRoom constraint: -" + to_string(roomLit1) + ", -" + to_string(roomLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
@@ -879,8 +841,7 @@ void runBenchMark()
                             continue;
                         int roomLit1 = r[class1LiteralIndex][class1RoomIndex];
                         int roomLit2 = r[class2LiteralIndex][class2RoomIndex];
-                        if (verbose)
-                            cout << "[VERBOSE] Adding DifferentRoom constraint: -" << roomLit1 << ", -" << roomLit2 << ", 0 \n";
+                        verboseLog("Adding DifferentRoom constraint: -" + to_string(roomLit1) + ", -" + to_string(roomLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
@@ -937,9 +898,7 @@ void runBenchMark()
                             {
                                 int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                 int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                if (verbose)
-                                    cout
-                                        << "[VERBOSE] Adding OverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                verboseLog("Adding OverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
@@ -957,9 +916,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding OverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding OverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -975,9 +932,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding OverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding OverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -1048,9 +1003,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding NotOverLap constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding NotOverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -1135,9 +1088,7 @@ void runBenchMark()
                                         {
                                             int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                             int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                            if (verbose)
-                                                cout
-                                                    << "[VERBOSE] Adding SameAttendees constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                            verboseLog("Adding SameAttendees constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                             ipamirAddClause(solver,
                                                             {-periodLit1, -periodLit2},
                                                             literalCounter,
@@ -1203,9 +1154,7 @@ void runBenchMark()
                             {
                                 int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                 int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                if (verbose)
-                                    cout
-                                        << "[VERBOSE] Adding WorkDay constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                verboseLog("Adding WorkDay constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
@@ -1270,9 +1219,7 @@ void runBenchMark()
                                 {
                                     if (timing1.weeks[timing1WeekIndex] == '1')
                                     {
-                                        if (verbose)
-                                            cout
-                                                << "[VERBOSE] Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        verboseLog("Adding Precedence constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0 ");
                                         ipamirAddClause(solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
@@ -1296,9 +1243,7 @@ void runBenchMark()
                                         {
                                             if (timing1.days[timing1DayIndex] == '1')
                                             {
-                                                if (verbose)
-                                                    cout
-                                                        << "[VERBOSE] Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                                verboseLog("Adding Precedence constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                                 ipamirAddClause(solver,
                                                                 {-periodLit1, -periodLit2},
                                                                 literalCounter,
@@ -1313,9 +1258,7 @@ void runBenchMark()
                                         int timing1End = timing1.start + timing1.length;
                                         if (timing1End <= timing2.start)
                                             continue;
-                                        if (verbose)
-                                            cout
-                                                << "[VERBOSE] Adding Precedence constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                        verboseLog("Adding Precedence constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                         ipamirAddClause(solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
@@ -1389,9 +1332,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding MinGap(" << G << ") constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding MinGap(" + to_string(G) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -1416,8 +1357,7 @@ void runBenchMark()
         for (int dayIndex = 0; dayIndex < days; dayIndex++)
         {
             dayUsed.push_back(literalCounter);
-            if (verbose)
-                cout << "[VERBOSE] Adding literal " << literalCounter << " as a day literal for MaxDays constraint \n";
+            verboseLog("Adding literal " + to_string(literalCounter) + " as a day literal for MaxDays constraint");
             literalCounter++;
         }
 
@@ -1432,8 +1372,7 @@ void runBenchMark()
         tot_drop(tot);
         // Last literal represents whether at-most-k holds
         ipamir_add_soft_lit(solver, literalCounter, maxDaysDistribution.penalty);
-        if (verbose)
-            cout << "[VERBOSE] Added literals :" << initalLiteralCounter << " - " << literalCounter << " for at-most-k encoding MaxDays \n";
+        verboseLog("Added literals :" + to_string(initalLiteralCounter) + " - " + to_string(literalCounter) + " for at-most-k encoding MaxDays");
         literalCounter++;
 
         vector<string> distributionClasses = maxDaysDistribution.classes;
@@ -1461,8 +1400,7 @@ void runBenchMark()
                     int dayUsedLit = dayUsed[dayIndex];
                     // (periodLit -> dayUsedLit)
                     ipamirAddClause(solver, {-periodLit, dayUsedLit}, literalCounter, true, 0);
-                    if (verbose)
-                        cout << "[VERBOSE] Adding MaxDays(" << D << ") constraint: -" << periodLit << ", " << dayUsedLit << ", 0 \n";
+                    verboseLog("Adding MaxDays(" + to_string(D) + ") constraint: -" + to_string(periodLit) + ", " + to_string(dayUsedLit) + ", 0 ");
                 }
             }
         }
@@ -1523,9 +1461,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding MaxDayLoad(" << maxDayLoadS << ") constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding MaxDayLoad(" + to_string(maxDayLoadS) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -1603,9 +1539,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding MaxBreaks(" << maxBreaksR << "," << maxBreaksS << ") constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding MaxBreaks(" + to_string(maxBreaksR) + "," + to_string(maxBreaksS) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -1681,9 +1615,7 @@ void runBenchMark()
                                 {
                                     int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
                                     int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    if (verbose)
-                                        cout
-                                            << "[VERBOSE] Adding MaxBlocks(" << maxBlocksM << "," << maxBlocksS << ") constraint: -" << periodLit1 << ", -" << periodLit2 << ", 0 \n";
+                                    verboseLog("Adding MaxBlocks(" + to_string(maxBlocksM) + "," + to_string(maxBlocksS) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
@@ -1731,8 +1663,7 @@ void runBenchMark()
                         timingDays = timing.days;
                         timingStart = timing.start;
                         timingLength = timing.length;
-                        if (verbose)
-                            cout << "[VERBOSE] timingLit:" << timingLit << "=1 \n";
+                        verboseLog("timingLit: " + to_string(timingLit) + "=1");
                     }
                 }
 
@@ -1740,8 +1671,7 @@ void runBenchMark()
                 if (classObj.rooms.size() == 0)
                 {
                     roomId = "[/]";
-                    if (verbose)
-                        cout << "[VERBOSE] roomLit: - \n";
+                    verboseLog("roomLit: -");
                 }
                 for (int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
                 {
@@ -1750,8 +1680,7 @@ void runBenchMark()
                     {
                         Room room = classObj.rooms[roomIndex];
                         roomId = room.id;
-                        if (verbose)
-                            cout << "[VERBOSE] roomLit:" << roomLit << "=1 \n";
+                        verboseLog("roomLit:" + to_string(roomLit) + "=1");
                     }
                 }
 
@@ -1774,10 +1703,7 @@ void runBenchMark()
         vector<int> clauseLiterals = parseUserClauseInput(input);
         for (int lit : clauseLiterals)
         {
-            if (verbose)
-            {
-                cout << "[VERBOSE] Adding literal " << lit << "\n";
-            }
+            verboseLog("Adding literal " + to_string(lit));
             ipamir_add_hard(solver, lit);
         }
     }

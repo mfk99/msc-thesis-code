@@ -1,4 +1,5 @@
 #include "../input-parser/input-parser.h"
+#include "../logging/logging.h"
 #include "../../../../ipamir.h"
 #include "../../../../rustsat/capi/rustsat.h"
 #include "scheduling-encoding-generator.h"
@@ -25,8 +26,7 @@ void generateEncoding(vector<int> generationVariables)
     int timeSlots = days * hours;
     int totalCourseHours = courses * courseHours;
 
-    if (verbose)
-        cout << "Creating clauses for " << courseHours << " course hours with " << timeSlots << " available timeslots and " << classRooms << " classrooms.\n";
+    verboseLog("Creating clauses for " + to_string(courseHours) + " course hours with " + to_string(timeSlots) + " available timeslots and " + to_string(classRooms) + " classrooms.");
 
     //
 
@@ -36,11 +36,11 @@ void generateEncoding(vector<int> generationVariables)
     1. Two classes can't have the same room
     2. Every class must have a classroom
     */
-    if (verbose)
-        cout << "Creating clauses for " << courseHours << " hours per course ("
-             << totalCourseHours << " course-hours total) with "
-             << timeSlots << " available timeslots and "
-             << classRooms << " classrooms.\n";
+    verboseLog("Creating clauses for " +
+               to_string(courseHours) + " hours per course (" +
+               to_string(totalCourseHours) + " course-hours total) with " +
+               to_string(timeSlots) + " available timeslots and " +
+               to_string(classRooms) + " classrooms.");
 
     // Create 3D vector of literals:
     vector<vector<vector<int>>> literals;
@@ -54,19 +54,14 @@ void generateEncoding(vector<int> generationVariables)
             literals[(size_t)c][r].resize((size_t)timeSlots);
             for (int t = 0; t < timeSlots; t++)
             {
-                if (verbose)
-                {
-                    cout << "[VERBOSE] Creating literal " << literalCounter
-                         << " for courseHour=" << c << " room=" << r << " timeslot=" << t << "\n";
-                }
+                verboseLog("Creating literal " + to_string(literalCounter) + " for courseHour=" + to_string(c) + " room=" + to_string(r) + " timeslot=" + to_string(t));
                 literals[(size_t)c][r][t] = literalCounter++;
             }
         }
     }
 
     long long vars = (long long)literalCounter - 1;
-    if (verbose)
-        cout << "[VERBOSE] Total variables (literals) = " << vars << "\n";
+    verboseLog("Total variables (literals) = " + to_string(vars));
 
     // Clause vectors
     vector<vector<int>> mustHaveRoomClauses;
@@ -196,9 +191,7 @@ void writeEncodingToFile(string encodingFilePath, long long vars, long long clau
                          vector<vector<int>> roomConflictClauses,
                          vector<int> generationVariables)
 {
-    if (verbose)
-        cout
-            << "Writing to file: " << encodingFilePath << "\n";
+    verboseLog("Writing to file: " + encodingFilePath);
 
     ofstream encodingfile;
     encodingfile.open(encodingFilePath);
@@ -248,8 +241,7 @@ void writeEncodingToFile(string encodingFilePath, long long vars, long long clau
     }
 
     encodingfile.close();
-    if (verbose)
-        cout << "Finished writing encoding to file: " << encodingFilePath << "\n";
+    verboseLog("Finished writing encoding to file: " + encodingFilePath);
 }
 
 string getFilePath()
