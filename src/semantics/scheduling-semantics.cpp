@@ -1408,7 +1408,6 @@ void runBenchMark()
     }
 
     // Encode MaxDays Constraints
-    // TODO: Make this work with variable amount of courses
     int D = 4;
     for (Distribution maxDaysDistribution : distributionsMap["MaxDays"])
     {
@@ -1431,13 +1430,13 @@ void runBenchMark()
         tot_reserve(tot, &literalCounter);
         tot_encode_ub(tot, D, D, &literalCounter, ipamirClauseCollector, solver);
         tot_drop(tot);
+        // Last literal represents whether at-most-k holds
         ipamir_add_soft_lit(solver, literalCounter, maxDaysDistribution.penalty);
         if (verbose)
             cout << "[VERBOSE] Added literals :" << initalLiteralCounter << " - " << literalCounter << " for at-most-k encoding MaxDays \n";
         literalCounter++;
 
-        vector<string>
-            distributionClasses = maxDaysDistribution.classes;
+        vector<string> distributionClasses = maxDaysDistribution.classes;
         for (size_t classIndex = 0; classIndex < distributionClasses.size(); classIndex++)
         {
             string classId = distributionClasses[classIndex];
@@ -1460,7 +1459,7 @@ void runBenchMark()
                         continue;
                     int periodLit = t[classLiteralIndex][classTimingIndex];
                     int dayUsedLit = dayUsed[dayIndex];
-                    // periodLit -> dayUsedLit
+                    // (periodLit -> dayUsedLit)
                     ipamirAddClause(solver, {-periodLit, dayUsedLit}, literalCounter, true, 0);
                     if (verbose)
                         cout << "[VERBOSE] Adding MaxDays(" << D << ") constraint: -" << periodLit << ", " << dayUsedLit << ", 0 \n";
