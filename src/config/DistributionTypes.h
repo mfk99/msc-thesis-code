@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <variant>
 
 using namespace std;
 
@@ -52,3 +53,12 @@ struct MaxBlockDistribution : public Distribution
     // Break length limit for M to be recognized as a single block
     int S;
 };
+
+using DistributionVariant = std::variant<
+    Distribution,
+    WorkDayDistribution,
+    MinGapDistribution,
+    MaxDaysDistribution,
+    MaxDayLoadDistribution,
+    MaxBreaksDistribution,
+    MaxBlockDistribution>;

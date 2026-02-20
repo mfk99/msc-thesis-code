@@ -370,9 +370,9 @@ vector<vector<vector<vector<int>>>> getRoomAvailability()
     return roomAvailability;
 }
 
-map<string, vector<Distribution>> getDistributions()
+map<string, vector<DistributionVariant>> getDistributions()
 {
-    map<string, vector<Distribution>> distributions;
+    map<string, vector<DistributionVariant>> distributions;
 
     char *filePathChar = new char[filePath.length() + 1];
     strcpy(filePathChar, filePath.c_str());
@@ -412,15 +412,7 @@ map<string, vector<Distribution>> getDistributions()
         newDistribution.required = required;
         newDistribution.penalty = penalty;
         newDistribution.classes = classes;
-
-        if (distributions.count(distributionType))
-        {
-            distributions[distributionType].push_back(newDistribution);
-        }
-        else
-        {
-            distributions[distributionType] = vector<Distribution>{newDistribution};
-        }
+        distributions[distributionType].push_back(newDistribution);
     }
 
     return distributions;

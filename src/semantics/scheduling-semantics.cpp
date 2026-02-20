@@ -148,7 +148,7 @@ void runBenchMark()
                to_string(rooms) + " rooms.");
 
     // Map of distributions, used for generating distribution encodings
-    map<string, vector<Distribution>> distributionsMap = getDistributions();
+    map<string, vector<DistributionVariant>> distributionsMap = getDistributions();
 
     logTimingLiterals(t);
     logRoomLiterals(r);
@@ -364,9 +364,16 @@ void runBenchMark()
     }
 
     // Encode SameStart constraints
-    for (Distribution sameStartDistribution : distributionsMap["SameStart"])
+    for (auto &dist : distributionsMap["SameStart"])
     {
-        vector<string> distributionClasses = sameStartDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -406,8 +413,8 @@ void runBenchMark()
                         ipamirAddClause(solver,
                                         {-periodLit1, -periodLit2},
                                         literalCounter,
-                                        sameStartDistribution.required,
-                                        sameStartDistribution.penalty);
+                                        required,
+                                        penalty);
                     }
                 }
             }
@@ -415,9 +422,16 @@ void runBenchMark()
     }
 
     // Encode SameTime constraints
-    for (Distribution sameTimeDistribution : distributionsMap["SameTime"])
+    for (auto &dist : distributionsMap["SameTime"])
     {
-        vector<string> distributionClasses = sameTimeDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -458,8 +472,8 @@ void runBenchMark()
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
-                                            sameTimeDistribution.required,
-                                            sameTimeDistribution.penalty);
+                                            required,
+                                            penalty);
                         }
                     }
                 }
@@ -468,9 +482,16 @@ void runBenchMark()
     }
 
     // Encode DifferentTime constraints
-    for (Distribution differentTimeDistribution : distributionsMap["DifferentTime"])
+    for (auto &dist : distributionsMap["DifferentTime"])
     {
-        vector<string> distributionClasses = differentTimeDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -510,8 +531,8 @@ void runBenchMark()
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
-                                            differentTimeDistribution.required,
-                                            differentTimeDistribution.penalty);
+                                            required,
+                                            penalty);
                         }
                     }
                 }
@@ -520,9 +541,16 @@ void runBenchMark()
     }
 
     // Encode SameDays constraints
-    for (Distribution SameDaysDistribution : distributionsMap["SameDays"])
+    for (auto &dist : distributionsMap["SameDays"])
     {
-        vector<string> distributionClasses = SameDaysDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -570,8 +598,8 @@ void runBenchMark()
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
-                                            SameDaysDistribution.required,
-                                            SameDaysDistribution.penalty);
+                                            required,
+                                            penalty);
                         }
                     }
                 }
@@ -580,9 +608,16 @@ void runBenchMark()
     }
 
     // Encode DifferentDays constraints
-    for (Distribution DifferentDaysDistribution : distributionsMap["DifferentDays"])
+    for (auto &dist : distributionsMap["DifferentDays"])
     {
-        vector<string> distributionClasses = DifferentDaysDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -625,8 +660,8 @@ void runBenchMark()
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
-                                                DifferentDaysDistribution.required,
-                                                DifferentDaysDistribution.penalty);
+                                                required,
+                                                penalty);
                                 break;
                             }
                         }
@@ -637,9 +672,16 @@ void runBenchMark()
     }
 
     // Encode SameWeeks constraints
-    for (Distribution sameWeeksDistribution : distributionsMap["SameWeeks"])
+    for (auto &dist : distributionsMap["SameWeeks"])
     {
-        vector<string> distributionClasses = sameWeeksDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -687,8 +729,8 @@ void runBenchMark()
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
-                                            sameWeeksDistribution.required,
-                                            sameWeeksDistribution.penalty);
+                                            required,
+                                            penalty);
                         }
                     }
                 }
@@ -697,9 +739,16 @@ void runBenchMark()
     }
 
     // Encode DifferentWeeks constraints
-    for (Distribution differentWeeksDistribution : distributionsMap["DifferentWeeks"])
+    for (auto &dist : distributionsMap["DifferentWeeks"])
     {
-        vector<string> distributionClasses = differentWeeksDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -741,8 +790,8 @@ void runBenchMark()
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
-                                                differentWeeksDistribution.required,
-                                                differentWeeksDistribution.penalty);
+                                                required,
+                                                penalty);
                                 break;
                             }
                         }
@@ -753,9 +802,16 @@ void runBenchMark()
     }
 
     // Encode SameRoom constraints
-    for (Distribution sameRoomDistribution : distributionsMap["SameRoom"])
+    for (auto &dist : distributionsMap["SameRoom"])
     {
-        vector<string> distributionClasses = sameRoomDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -795,8 +851,8 @@ void runBenchMark()
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
-                                        sameRoomDistribution.required,
-                                        sameRoomDistribution.penalty);
+                                        required,
+                                        penalty);
                     }
                 }
             }
@@ -804,9 +860,16 @@ void runBenchMark()
     }
 
     // Encode DifferentRoom constraints
-    for (Distribution differentRoomDistribution : distributionsMap["DifferentRoom"])
+    for (auto &dist : distributionsMap["DifferentRoom"])
     {
-        vector<string> distributionClasses = differentRoomDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -845,8 +908,8 @@ void runBenchMark()
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
-                                        differentRoomDistribution.required,
-                                        differentRoomDistribution.penalty);
+                                        required,
+                                        penalty);
                     }
                 }
             }
@@ -855,9 +918,16 @@ void runBenchMark()
 
     // Encode OverLap constraints
     // TODO: refactor this ASAP, a single for-loop shouldn't be 100 lines long
-    for (Distribution overLapDistribution : distributionsMap["OverLap"])
+    for (auto &dist : distributionsMap["OverLap"])
     {
-        vector<string> distributionClasses = overLapDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -902,8 +972,8 @@ void runBenchMark()
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
-                                                overLapDistribution.required,
-                                                overLapDistribution.penalty);
+                                                required,
+                                                penalty);
                                 constraintEncoded = true;
                             }
                             for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
@@ -920,8 +990,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    overLapDistribution.required,
-                                                    overLapDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                                 int timing1EndSlot = timing1.start + timing1.length;
@@ -936,8 +1006,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    overLapDistribution.required,
-                                                    overLapDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                             }
@@ -949,9 +1019,16 @@ void runBenchMark()
     }
 
     // Encode NotOverLap constraints
-    for (Distribution notOverLapDistribution : distributionsMap["NotOverLap"])
+    for (auto &dist : distributionsMap["NotOverLap"])
     {
-        vector<string> distributionClasses = notOverLapDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1007,8 +1084,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    notOverLapDistribution.required,
-                                                    notOverLapDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                             }
@@ -1020,9 +1097,16 @@ void runBenchMark()
     }
 
     // Encode SameAttendees constraints
-    for (Distribution sameAttendeesDistribution : distributionsMap["SameAttendees"])
+    for (auto &dist : distributionsMap["SameAttendees"])
     {
-        vector<string> distributionClasses = sameAttendeesDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1092,8 +1176,8 @@ void runBenchMark()
                                             ipamirAddClause(solver,
                                                             {-periodLit1, -periodLit2},
                                                             literalCounter,
-                                                            sameAttendeesDistribution.required,
-                                                            sameAttendeesDistribution.penalty);
+                                                            required,
+                                                            penalty);
                                             constraintEncoded = true;
                                         }
                                     }
@@ -1108,9 +1192,17 @@ void runBenchMark()
 
     // Encode WorkDay constraints
     int S = hours;
-    for (Distribution workDayDistribution : distributionsMap["WorkDay"])
+    for (auto &dist : distributionsMap["WorkDay"])
     {
-        vector<string> distributionClasses = workDayDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
+
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1158,8 +1250,8 @@ void runBenchMark()
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
-                                                workDayDistribution.required,
-                                                workDayDistribution.penalty);
+                                                required,
+                                                penalty);
                                 break;
                             }
                         }
@@ -1171,9 +1263,16 @@ void runBenchMark()
 
     // Encode Precedence constraints
     // TODO: refactor this, too long and convoluted
-    for (Distribution precedenceDistribution : distributionsMap["Precedence"])
+    for (auto &dist : distributionsMap["Precedence"])
     {
-        vector<string> distributionClasses = precedenceDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1223,8 +1322,8 @@ void runBenchMark()
                                         ipamirAddClause(solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
-                                                        precedenceDistribution.required,
-                                                        precedenceDistribution.penalty);
+                                                        required,
+                                                        penalty);
                                         constraintEncoded = true;
                                     }
                                 }
@@ -1247,8 +1346,8 @@ void runBenchMark()
                                                 ipamirAddClause(solver,
                                                                 {-periodLit1, -periodLit2},
                                                                 literalCounter,
-                                                                precedenceDistribution.required,
-                                                                precedenceDistribution.penalty);
+                                                                required,
+                                                                penalty);
                                                 constraintEncoded = true;
                                             }
                                         }
@@ -1262,8 +1361,8 @@ void runBenchMark()
                                         ipamirAddClause(solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
-                                                        precedenceDistribution.required,
-                                                        precedenceDistribution.penalty);
+                                                        required,
+                                                        penalty);
                                         constraintEncoded = true;
                                     }
                                 }
@@ -1278,9 +1377,16 @@ void runBenchMark()
     // Encode MinGap Constraints
     // TODO: Add dynamic variable retrieval from config
     int G = 1;
-    for (Distribution minGapDistribution : distributionsMap["MinGap"])
+    for (auto &dist : distributionsMap["MinGap"])
     {
-        vector<string> distributionClasses = minGapDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1336,8 +1442,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    minGapDistribution.required,
-                                                    minGapDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                             }
@@ -1350,8 +1456,16 @@ void runBenchMark()
 
     // Encode MaxDays Constraints
     int D = 4;
-    for (Distribution maxDaysDistribution : distributionsMap["MaxDays"])
+    for (auto &dist : distributionsMap["MaxDays"])
     {
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         // Initialize dayUsed literals
         vector<int> dayUsed;
         for (int dayIndex = 0; dayIndex < days; dayIndex++)
@@ -1371,11 +1485,10 @@ void runBenchMark()
         tot_encode_ub(tot, D, D, &literalCounter, ipamirClauseCollector, solver);
         tot_drop(tot);
         // Last literal represents whether at-most-k holds
-        ipamir_add_soft_lit(solver, literalCounter, maxDaysDistribution.penalty);
+        ipamir_add_soft_lit(solver, literalCounter, penalty);
         verboseLog("Added literals :" + to_string(initalLiteralCounter) + " - " + to_string(literalCounter) + " for at-most-k encoding MaxDays");
         literalCounter++;
 
-        vector<string> distributionClasses = maxDaysDistribution.classes;
         for (size_t classIndex = 0; classIndex < distributionClasses.size(); classIndex++)
         {
             string classId = distributionClasses[classIndex];
@@ -1409,9 +1522,16 @@ void runBenchMark()
     // Encode MaxDayLoad Constraints
     // TODO: Make this work with variable amount of courses
     int maxDayLoadS = 4;
-    for (Distribution maxDayLoadDistribution : distributionsMap["MaxDayLoad"])
+    for (auto &dist : distributionsMap["MaxDayLoad"])
     {
-        vector<string> distributionClasses = maxDayLoadDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1465,8 +1585,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    maxDayLoadDistribution.required,
-                                                    maxDayLoadDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                             }
@@ -1483,9 +1603,16 @@ void runBenchMark()
     int maxBreaksR = 1;
     // Length of blocks
     int maxBreaksS = 4;
-    for (Distribution maxBreaksDistribution : distributionsMap["MaxBreaks"])
+    for (auto &dist : distributionsMap["MaxBreaks"])
     {
-        vector<string> distributionClasses = maxBreaksDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1543,8 +1670,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    maxBreaksDistribution.required,
-                                                    maxBreaksDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                             }
@@ -1560,9 +1687,16 @@ void runBenchMark()
     int maxBlocksM = 5;
     // Required break length
     int maxBlocksS = 2;
-    for (Distribution maxBlocksDistribution : distributionsMap["MaxBlocks"])
+    for (auto &dist : distributionsMap["MaxBlocks"])
     {
-        vector<string> distributionClasses = maxBlocksDistribution.classes;
+        vector<string> distributionClasses;
+        bool required;
+        int penalty;
+        std::visit([&distributionClasses, &required, &penalty](auto &d)
+                   { distributionClasses = d.classes;
+                    required = d.required;
+                    penalty = d.penalty; },
+                   dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
@@ -1619,8 +1753,8 @@ void runBenchMark()
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
-                                                    maxBlocksDistribution.required,
-                                                    maxBlocksDistribution.penalty);
+                                                    required,
+                                                    penalty);
                                     constraintEncoded = true;
                                 }
                             }
