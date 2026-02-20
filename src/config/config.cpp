@@ -6,6 +6,8 @@
 #include <fstream>
 #include "../input-parser/input-parser.h"
 #include <iostream>
+#include "DistributionTypes.h"
+#include "ClassTypes.h"
 
 using namespace std;
 using namespace pugi;
@@ -14,44 +16,6 @@ using namespace pugi;
 largely adheres to the ITC 2019 data format.
 More info available at: https://www.itc2019.org/format
 */
-struct RoomUnavailability
-{
-    string days;
-    string weeks;
-    int start;
-    int length;
-};
-
-struct Room
-{
-    string id;
-    int penalty;
-    vector<RoomUnavailability> unavailability;
-    map<string, int> travelTimes;
-};
-
-struct Timing
-{
-    string days;
-    string weeks;
-    int start;
-    int length;
-    int penalty;
-};
-
-struct Class
-{
-    string id;
-    vector<Room> rooms;
-    vector<Timing> timings;
-};
-
-struct Distribution
-{
-    bool required;
-    int penalty;
-    vector<string> classes;
-};
 
 void generateConfig(vector<int> configVariables)
 {
