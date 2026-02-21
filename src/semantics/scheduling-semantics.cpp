@@ -1375,17 +1375,22 @@ void runBenchMark()
     }
 
     // Encode MinGap Constraints
-    // TODO: Add dynamic variable retrieval from config
-    int G = 1;
+
     for (auto &dist : distributionsMap["MinGap"])
     {
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        std::visit([&distributionClasses, &required, &penalty](auto &d)
+        int G = 1;
+        std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
-                    penalty = d.penalty; },
+                    penalty = d.penalty;
+                    using T = std::decay_t<decltype(d)>;
+                    if constexpr (std::is_same_v<T, MinGapDistribution>)
+                    {
+                        G = d.G;
+                    } },
                    dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
@@ -1455,16 +1460,22 @@ void runBenchMark()
     }
 
     // Encode MaxDays Constraints
-    int D = 4;
+
     for (auto &dist : distributionsMap["MaxDays"])
     {
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        std::visit([&distributionClasses, &required, &penalty](auto &d)
+        int D = 4;
+        std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
-                    penalty = d.penalty; },
+                    penalty = d.penalty;
+                    using T = std::decay_t<decltype(d)>;
+                    if constexpr (std::is_same_v<T, MaxDaysDistribution>)
+                    {
+                        D = d.D;
+                    } },
                    dist);
         // Initialize dayUsed literals
         vector<int> dayUsed;
@@ -1521,16 +1532,22 @@ void runBenchMark()
 
     // Encode MaxDayLoad Constraints
     // TODO: Make this work with variable amount of courses
-    int maxDayLoadS = 4;
+
     for (auto &dist : distributionsMap["MaxDayLoad"])
     {
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        std::visit([&distributionClasses, &required, &penalty](auto &d)
+        int maxDayLoadS = 0;
+        std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
-                    penalty = d.penalty; },
+                    penalty = d.penalty;
+                    using T = std::decay_t<decltype(d)>;
+                    if constexpr (std::is_same_v<T, MaxDayLoadDistribution>)
+                    {
+                        maxDayLoadS = d.S;
+                    } },
                    dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
@@ -1599,19 +1616,25 @@ void runBenchMark()
 
     // Encode MaxBreaks Constraints
     // TODO: Make this work with variable amount of courses
-    // Max n.o. blocks
-    int maxBreaksR = 1;
-    // Length of blocks
-    int maxBreaksS = 4;
     for (auto &dist : distributionsMap["MaxBreaks"])
     {
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        std::visit([&distributionClasses, &required, &penalty](auto &d)
+        // Max n.o. blocks
+        int maxBreaksR = 0;
+        // Length of blocks
+        int maxBreaksS = 0;
+        std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
-                    penalty = d.penalty; },
+                    penalty = d.penalty;
+                    using T = std::decay_t<decltype(d)>;
+                    if constexpr (std::is_same_v<T, MaxBreaksDistribution>)
+                    {
+                        maxBreaksR = d.R;
+                        maxBreaksS = d.S;
+                    } },
                    dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
@@ -1683,19 +1706,25 @@ void runBenchMark()
     }
 
     // Encode MaxBlocks Constraints
-    // Max n.o. blocks
-    int maxBlocksM = 5;
-    // Required break length
-    int maxBlocksS = 2;
     for (auto &dist : distributionsMap["MaxBlocks"])
     {
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        std::visit([&distributionClasses, &required, &penalty](auto &d)
+        // Max n.o. blocks
+        int maxBlocksM = 0;
+        // Required break length
+        int maxBlocksS = 0;
+        std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
-                    penalty = d.penalty; },
+                    penalty = d.penalty;
+                    using T = std::decay_t<decltype(d)>;
+                    if constexpr (std::is_same_v<T, MaxBlockDistribution>)
+                    {
+                        maxBlocksM = d.M;
+                        maxBlocksS = d.S;
+                    } },
                    dist);
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {

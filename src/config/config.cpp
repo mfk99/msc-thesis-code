@@ -370,14 +370,109 @@ vector<vector<vector<vector<int>>>> getRoomAvailability()
     return roomAvailability;
 }
 
+void parseDistribution(xml_node distributionNode, map<string, vector<DistributionVariant>> &distributions)
+{
+
+    bool required = 0;
+    if (distributionNode.attribute("required"))
+    {
+        string requiredStr = distributionNode.attribute("required").as_string();
+        required = requiredStr == "true";
+    }
+
+    int penalty = 0;
+    if (distributionNode.attribute("penalty"))
+    {
+        penalty = distributionNode.attribute("penalty").as_int();
+    }
+
+    vector<string> classes;
+    for (xml_node classNode : distributionNode.children())
+    {
+        string className = classNode.attribute("id").as_string();
+        classes.push_back(className);
+    }
+
+    string distributionString = distributionNode.attribute("type").as_string();
+    size_t openParen = distributionString.find('(');
+
+    if (openParen == string::npos)
+    {
+        distributions[distributionString].emplace_back(Distribution(required, penalty, classes));
+        return;
+    }
+
+    string distributionType = distributionString.substr(0, openParen);
+    size_t closeParen = distributionString.find(')', openParen);
+    if (closeParen == string::npos)
+    {
+        cout << "Closing parenthesis not found, exiting. \n";
+        throw;
+    }
+    string parametersStr = distributionString.substr(openParen + 1, closeParen - openParen - 1);
+    vector<int> parameters;
+    size_t pos = 0;
+    string parameterStr;
+
+    while ((pos = parametersStr.find(',')) != string::npos)
+    {
+        parameterStr = parametersStr.substr(0, pos);
+        parameters.push_back(stoi(parameterStr));
+        parametersStr.erase(0, pos + 1);
+    }
+
+    if (!parametersStr.empty())
+    {
+        parameters.push_back(stoi(parametersStr));
+    }
+
+    if (parameters.size() > 2)
+    {
+        cout << "Expected maximum of 2 distribution parameters, found " << parameters.size() << ", exiting. \n";
+        throw;
+    }
+
+    if (distributionType == "WorkDay")
+    {
+        distributions[distributionType].emplace_back(WorkDayDistribution(required, penalty, classes, parameters[0]));
+        return;
+    }
+    else if (distributionType == "MinGap")
+    {
+        distributions[distributionType].emplace_back(MinGapDistribution(required, penalty, classes, parameters[0]));
+        return;
+    }
+    else if (distributionType == "MaxDays")
+    {
+        distributions[distributionType].emplace_back(MaxDaysDistribution(required, penalty, classes, parameters[0]));
+        return;
+    }
+    else if (distributionType == "MaxDayLoad")
+    {
+        distributions[distributionType].emplace_back(MaxDayLoadDistribution(required, penalty, classes, parameters[0]));
+        return;
+    }
+    else if (distributionType == "MaxBreaks")
+    {
+        distributions[distributionType].emplace_back(MaxBreaksDistribution(required, penalty, classes, parameters[0], parameters[1]));
+        return;
+    }
+    else if (distributionType == "MaxBlock")
+    {
+        distributions[distributionType].emplace_back(MaxBlockDistribution(required, penalty, classes, parameters[0], parameters[1]));
+        return;
+    }
+
+    cout << "Couldn't match distribution type:" << distributionType << ", exiting. \n";
+    throw;
+}
+
 map<string, vector<DistributionVariant>> getDistributions()
 {
     map<string, vector<DistributionVariant>> distributions;
 
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
     xml_document doc;
-    xml_parse_result result = doc.load_file(filePathChar);
+    xml_parse_result result = doc.load_file(filePath.c_str());
     if (verbose)
         cout << "[VERBOSE] Load result: " << result.description() << "\n";
 
@@ -385,34 +480,7 @@ map<string, vector<DistributionVariant>> getDistributions()
 
     for (xml_node distributionNode : distributionsNode.children())
     {
-
-        string distributionType = distributionNode.attribute("type").as_string();
-
-        bool required = 0;
-        if (distributionNode.attribute("required"))
-        {
-            string requiredStr = distributionNode.attribute("required").as_string();
-            required = requiredStr == "true";
-        }
-
-        int penalty = 0;
-        if (distributionNode.attribute("penalty"))
-        {
-            penalty = distributionNode.attribute("penalty").as_int();
-        }
-
-        vector<string> classes;
-        for (xml_node classNode : distributionNode.children())
-        {
-            string className = classNode.attribute("id").as_string();
-            classes.push_back(className);
-        }
-
-        Distribution newDistribution;
-        newDistribution.required = required;
-        newDistribution.penalty = penalty;
-        newDistribution.classes = classes;
-        distributions[distributionType].push_back(newDistribution);
+        parseDistribution(distributionNode, distributions);
     }
 
     return distributions;
