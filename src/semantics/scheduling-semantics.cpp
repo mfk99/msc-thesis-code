@@ -99,11 +99,15 @@ void runBenchMark()
     void *solver = ipamir_init();
 
     map<string, Class> classMap = getClasses();
+    map<string, int> classIndexMap;
 
     vector<Class> classVec;
+    int index = 0;
     for (auto &pair : classMap)
     {
         classVec.push_back(pair.second);
+        classIndexMap[pair.second.id] = index;
+        index++;
     }
 
     // Represents class period assignments
@@ -378,26 +382,11 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            // TODO This and all instances of it should REALLY be refactored ASAP
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -436,25 +425,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -496,25 +473,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -555,25 +520,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -622,25 +575,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -686,25 +627,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -753,25 +682,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -816,25 +733,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
 
                 for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
                 {
@@ -874,25 +779,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
 
                 for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
                 {
@@ -932,25 +825,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1033,25 +914,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1111,25 +980,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1207,25 +1064,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1277,25 +1122,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1396,25 +1229,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1553,25 +1374,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1640,25 +1449,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1730,25 +1527,13 @@ void runBenchMark()
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = classMap[class1Id];
-            int class1LiteralIndex = 0;
-            for (Class classObj : classVec)
-            {
-                if (classObj.id == class1.id)
-                    break;
-                class1LiteralIndex++;
-            }
+            int class1LiteralIndex = classIndexMap[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
-                int class2LiteralIndex = 0;
-                for (Class classObj : classVec)
-                {
-                    if (classObj.id == class2.id)
-                        break;
-                    class2LiteralIndex++;
-                }
+                int class2LiteralIndex = classIndexMap[class2.id];
                 for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
