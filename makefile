@@ -4,6 +4,7 @@ OBJ_DIR = build
 SRCS = \
  src/index.cpp \
  src/semantics/scheduling_semantics.cpp \
+ src/semantics/distributions_encodings.cpp \
  src/input_parser/input_parser.cpp \
  src/scheduling_encoding_generator/scheduling_encoding_generator.cpp \
  src/config/config.cpp \
