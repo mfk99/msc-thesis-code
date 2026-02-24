@@ -4,19 +4,13 @@
 #include <map>
 #include <string>
 #include <chrono>
-#include <numeric>
 #include "distribution_encodings.h"
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
-#include "../am1/am1_encoder.h"
 #include "../../../../ipamir.h"
-#include "../../../../rustsat/capi/rustsat.h"
 
 using namespace std;
-using namespace RustSAT;
-
-void ipamirAddSoftClause(void *solver, vector<int> clause, uint32_t &literalCount, int penalty);
 
 vector<int> parseUserClauseInput(string input)
 {
@@ -140,12 +134,12 @@ void runBenchMark()
             {
                 Class classObj = classVec[classIndex];
                 string classId = classObj.id;
-                string timingWeeks,
-                    timingDays;
-                int timingStart,
-                    timingLength;
+                string timingWeeks = "",
+                       timingDays = "";
+                int timingStart = 0,
+                    timingLength = 0;
 
-                for (int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
+                for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                 {
                     int timingLit = t[classIndex][timingIndex];
                     if (0 < ipamir_val_lit(solver, timingLit))
@@ -159,13 +153,13 @@ void runBenchMark()
                     }
                 }
 
-                string roomId;
+                string roomId = "";
                 if (classObj.rooms.size() == 0)
                 {
                     roomId = "[/]";
                     verboseLog("roomLit: -");
                 }
-                for (int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+                for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
                 {
                     int roomLit = r[classIndex][roomIndex];
                     if (0 < ipamir_val_lit(solver, roomLit))

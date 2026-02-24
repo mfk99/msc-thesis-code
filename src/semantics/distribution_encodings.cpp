@@ -3,8 +3,6 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <chrono>
-#include <numeric>
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
@@ -153,7 +151,7 @@ void encodeAssignmentPenalties(void *solver,
     for (long long classIndex = 0; classIndex < classes; classIndex++)
     {
         Class classObj = classVec[classIndex];
-        for (long long timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
+        for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
         {
             Timing timing = classObj.timings[timingIndex];
             if (timing.penalty != 0)
@@ -164,7 +162,7 @@ void encodeAssignmentPenalties(void *solver,
             }
         }
 
-        for (long long roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+        for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
         {
             Room room = classObj.rooms[roomIndex];
             if (room.penalty != 0)
@@ -191,19 +189,19 @@ void encodeRoomConflictConstraints(void *solver,
         for (long long class2Index = class1Index + 1; class2Index < classes; class2Index++)
         {
             Class class2 = classVec[class2Index];
-            for (int class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
+            for (long unsigned int class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
             {
                 Room room1 = class1.rooms[class1RoomIndex];
-                for (int class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
+                for (long unsigned int class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
                 {
                     Room room2 = class2.rooms[class2RoomIndex];
                     if (room1.id != room2.id)
                         continue;
 
-                    for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                    for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                     {
                         Timing timing1 = class1.timings[class1TimingIndex];
-                        for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                        for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                         {
                             Timing timing2 = class2.timings[class2TimingIndex];
                             string timing1Weeks = timing1.weeks;
@@ -257,17 +255,17 @@ void encodeRoomUnavailabilityConstraints(
     vector<vector<int>> r,
     vector<Class> classVec)
 {
-    for (int classIndex = 0; classIndex < classVec.size(); classIndex++)
+    for (long unsigned int classIndex = 0; classIndex < classVec.size(); classIndex++)
     {
         Class classObj = classVec[classIndex];
-        for (int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+        for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
         {
             Room room = classObj.rooms[roomIndex];
             for (RoomUnavailability unavailability : room.unavailability)
             {
                 string roomUnavailabilityDays = unavailability.days;
                 string roomUnavailabilityWeeks = unavailability.weeks;
-                for (int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
+                for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                 {
 
                     bool constraintEncoded = false;
@@ -286,8 +284,6 @@ void encodeRoomUnavailabilityConstraints(
                             int roomUnavailabilityLength = unavailability.length;
                             int roomUnavailabilityEnd = roomUnavailabilityStart + roomUnavailabilityLength;
                             int classTimingStart = classTiming.start;
-                            int classTimingLength = classTiming.length;
-                            int classTimingEnd = classTimingStart + classTimingLength;
                             bool overLap = (roomUnavailabilityStart < roomUnavailabilityEnd && roomUnavailabilityStart >= classTimingStart) ||
                                            (classTimingStart < roomUnavailabilityEnd && classTimingStart >= roomUnavailabilityStart);
 
@@ -566,8 +562,6 @@ void encodeDifferentDaysConstraint(void *solver,
                     for (size_t class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         string class2TimingDays = class2.timings[class2TimingIndex].days;
-                        bool is1SubSet = true;
-                        bool is2SubSet = true;
                         for (int day = 0; day < days; day++)
                         {
                             if (class1TimingDays[day] == '1' && class2TimingDays[day] == '1')
@@ -852,10 +846,10 @@ void encodeOverLapConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         bool constraintEncoded = false;
@@ -952,11 +946,11 @@ void encodeNotOverLapConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
 
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         bool constraintEncoded = false;
@@ -1028,17 +1022,17 @@ void encodeSameAttendeesConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
 
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
-                        for (int class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
+                        for (long unsigned int class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
                         {
                             Room class1Room = class1.rooms[class1RoomIndex];
-                            for (int class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
+                            for (long unsigned int class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
                             {
                                 Room class2Room = class2.rooms[class2RoomIndex];
                                 bool constraintEncoded = false;
@@ -1104,7 +1098,7 @@ void encodeWorkDayConstraints(void *solver,
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        int S;
+        int S = -1;
         std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
@@ -1127,11 +1121,11 @@ void encodeWorkDayConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
 
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         for (int dayIndex = 0; dayIndex < days; dayIndex++)
@@ -1195,11 +1189,11 @@ void encodePrecedenceConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
 
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
@@ -1311,11 +1305,11 @@ void encodeMinGapConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
 
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         bool constraintEncoded = false;
@@ -1417,7 +1411,7 @@ void encodeMaxDaysConstraints(void *solver,
                     break;
                 classLiteralIndex++;
             }
-            for (int classTimingIndex = 0; classTimingIndex < classObj.timings.size(); classTimingIndex++)
+            for (long unsigned int classTimingIndex = 0; classTimingIndex < classObj.timings.size(); classTimingIndex++)
             {
                 Timing timing = classObj.timings[classTimingIndex];
                 string timingDays = timing.days;
@@ -1475,10 +1469,10 @@ void encodeMaxDayLoadConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         bool constraintEncoded = false;
@@ -1560,10 +1554,10 @@ void encodeMaxBreaksConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         bool constraintEncoded = false;
@@ -1581,7 +1575,6 @@ void encodeMaxBreaksConstraints(void *solver,
                                 if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
                                     continue;
 
-                                int breakAmount = 0;
                                 int timing1End = timing1.start + timing1.length;
                                 int timing2End = timing2.start + timing2.length;
                                 int breakLength = min(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
@@ -1648,10 +1641,10 @@ void encodeMaxBlocksConstraints(void *solver,
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = classMap[class2Id];
                 int class2LiteralIndex = classIndexMap[class2.id];
-                for (int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
-                    for (int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
                         bool constraintEncoded = false;
