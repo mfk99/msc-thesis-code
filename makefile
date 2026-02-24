@@ -9,7 +9,7 @@ SRCS = \
  src/config/config.cpp \
  src/am1/am1-encoder.cpp \
  src/logging/logging.cpp \
- libs/pugixml-1.15/src/pugixml.cpp
+ libs/pugixml/src/pugixml.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 CXX = g++

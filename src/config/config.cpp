@@ -2,7 +2,7 @@
 #include <map>
 #include <string>
 #include <cstring>
-#include "../../libs/pugixml-1.15/src/pugixml.hpp"
+#include "../../libs/pugixml/src/pugixml.hpp"
 #include <fstream>
 #include "../input-parser/input-parser.h"
 #include <iostream>
