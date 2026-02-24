@@ -1,7 +1,7 @@
 #include <iostream>
-#include "semantics/scheduling-semantics.h"
-#include "input-parser/input-parser.h"
-#include "scheduling-encoding-generator/scheduling-encoding-generator.h"
+#include "semantics/scheduling_semantics.h"
+#include "input_parser/input_parser.h"
+#include "scheduling_encoding_generator/scheduling_encoding_generator.h"
 #include "config/config.h"
 using namespace std;
 

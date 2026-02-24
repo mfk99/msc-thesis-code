@@ -3,11 +3,11 @@ OBJ_DIR = build
 
 SRCS = \
  src/index.cpp \
- src/semantics/scheduling-semantics.cpp \
- src/input-parser/input-parser.cpp \
- src/scheduling-encoding-generator/scheduling-encoding-generator.cpp \
+ src/semantics/scheduling_semantics.cpp \
+ src/input_parser/input_parser.cpp \
+ src/scheduling_encoding_generator/scheduling_encoding_generator.cpp \
  src/config/config.cpp \
- src/am1/am1-encoder.cpp \
+ src/am1/am1_encoder.cpp \
  src/logging/logging.cpp \
  libs/pugixml/src/pugixml.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)

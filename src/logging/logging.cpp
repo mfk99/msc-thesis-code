@@ -1,4 +1,4 @@
-#include "../input-parser/input-parser.h"
+#include "../input_parser/input_parser.h"
 #include <iostream>
 #include <vector>
 #include <string>

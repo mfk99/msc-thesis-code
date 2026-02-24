@@ -1,8 +1,8 @@
-#include "../input-parser/input-parser.h"
+#include "../input_parser/input_parser.h"
 #include "../logging/logging.h"
 #include "../../../../ipamir.h"
 #include "../../../../rustsat/capi/rustsat.h"
-#include "scheduling-encoding-generator.h"
+#include "scheduling_encoding_generator.h"
 #include <iostream>
 #include <string>
 #include <chrono>

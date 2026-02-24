@@ -4,7 +4,7 @@
 #include <cstring>
 #include "../../libs/pugixml/src/pugixml.hpp"
 #include <fstream>
-#include "../input-parser/input-parser.h"
+#include "../input_parser/input_parser.h"
 #include <iostream>
 #include "DistributionTypes.h"
 #include "ClassTypes.h"

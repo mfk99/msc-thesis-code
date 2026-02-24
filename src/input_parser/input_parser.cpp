@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "input-parser.h"
+#include "input_parser.h"
 using namespace std;
 
 unsigned short verbose = 0;
