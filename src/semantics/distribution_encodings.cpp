@@ -13,6 +13,29 @@
 using namespace std;
 using namespace RustSAT;
 
+struct ClauseCollectorData
+{
+    void *solver;
+    bool required;
+    int penalty;
+};
+
+void ipamirGteClauseCollector(int lit, void *collectorData)
+{
+    ClauseCollectorData *data = static_cast<ClauseCollectorData *>(collectorData);
+    if (data->required)
+    {
+        ipamir_add_hard(data->solver, lit);
+        ipamir_add_hard(data->solver, 0);
+        verboseLog("Adding hard clause [" + to_string(lit) + ",0]");
+    }
+    else
+    {
+        ipamir_add_soft_lit(data->solver, abs(lit), data->penalty);
+        verboseLog("Adding soft lit: " + to_string(abs(lit)) + " with penalty: " + to_string(data->penalty));
+    }
+}
+
 void ipamirClauseCollector(int lit, void *solver)
 {
     ipamir_add_hard(solver, lit);
@@ -1387,7 +1410,7 @@ void encodeMaxDaysConstraints(void *solver,
         }
 
         // Add at-most-k constraint
-        int initalLiteralCounter = literalCounter;
+        int initialLiteralCounter = literalCounter;
 
         Totalizer *tot = tot_new();
         for (int dayLiteral : dayUsed)
@@ -1397,7 +1420,7 @@ void encodeMaxDaysConstraints(void *solver,
         tot_drop(tot);
         // Last literal represents whether at-most-k holds
         ipamir_add_soft_lit(solver, literalCounter, penalty);
-        verboseLog("Added literals :" + to_string(initalLiteralCounter) + " - " + to_string(literalCounter) + " for at-most-k encoding MaxDays");
+        verboseLog("Added literals :" + to_string(initialLiteralCounter) + " - " + to_string(literalCounter) + " for at-most-k encoding MaxDays");
         literalCounter++;
 
         for (size_t classIndex = 0; classIndex < distributionClasses.size(); classIndex++)
@@ -1432,7 +1455,7 @@ void encodeMaxDaysConstraints(void *solver,
 }
 
 // Encode MaxDayLoad Constraints
-// TODO: Make this work with variable amount of courses
+// TODO: Correct penalty calculation
 void encodeMaxDayLoadConstraints(void *solver,
                                  uint32_t literalCounter,
                                  int weeks,
@@ -1447,7 +1470,7 @@ void encodeMaxDayLoadConstraints(void *solver,
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        int maxDayLoadS = 0;
+        int S = 0;
         std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
@@ -1455,58 +1478,50 @@ void encodeMaxDayLoadConstraints(void *solver,
                     using T = std::decay_t<decltype(d)>;
                     if constexpr (std::is_same_v<T, MaxDayLoadDistribution>)
                     {
-                        maxDayLoadS = d.S;
+                        S = d.S;
                     } },
                    dist);
-        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+
+        for (int weekIndex = 0; weekIndex < weeks; weekIndex++)
         {
-            string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
-
-            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            for (int dayIndex = 0; dayIndex < days; dayIndex++)
             {
-                string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
-                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                vector<int> literalVec;
+                vector<Timing> timingVec;
+                for (string classId : distributionClasses)
                 {
-                    Timing timing1 = class1.timings[class1TimingIndex];
-                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    Class classObj = classMap[classId];
+                    for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                     {
-                        Timing timing2 = class2.timings[class2TimingIndex];
-                        bool constraintEncoded = false;
-                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
-                        {
-                            string timing1Weeks = timing1.weeks;
-                            string timing2Weeks = timing2.weeks;
-                            if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
-                                continue;
-
-                            for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
-                            {
-                                string timing1Days = timing1.days;
-                                string timing2Days = timing2.days;
-                                if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
-                                    continue;
-
-                                int dayLoad = timing1.length + timing2.length;
-                                if (maxDayLoadS < dayLoad)
-                                {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    verboseLog("Adding MaxDayLoad(" + to_string(maxDayLoadS) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
-                                    ipamirAddClause(solver,
-                                                    {-periodLit1, -periodLit2},
-                                                    literalCounter,
-                                                    required,
-                                                    penalty);
-                                    constraintEncoded = true;
-                                }
-                            }
-                        }
+                        Timing timing = classObj.timings[timingIndex];
+                        if (timing.weeks[weekIndex] == '0' || timing.days[dayIndex] == '0')
+                            continue;
+                        int timingLiteral = t[classIndexMap[classId]][timingIndex];
+                        literalVec.push_back(timingLiteral);
+                        timingVec.push_back(timing);
                     }
                 }
+
+                if (literalVec.size() < 2)
+                    continue;
+
+                GeneralizedTotalizer *genTot = gte_new();
+                for (long unsigned int index = 0; index < literalVec.size(); index++)
+                {
+                    gte_add(genTot, literalVec[index], timingVec[index].length);
+                }
+                uint32_t n_vars_used = literalCounter - 1;
+                gte_reserve(genTot, &n_vars_used);
+                gte_encode_ub(genTot, S, S, &n_vars_used, ipamirClauseCollector, solver);
+                ClauseCollectorData data;
+                data.penalty = penalty;
+                data.required = required;
+                data.solver = solver;
+                gte_enforce_ub(genTot, S, ipamirGteClauseCollector, &data);
+                gte_drop(genTot);
+
+                verboseLog("Adding MaxDayLoad(" + to_string(S) + ") constraint");
+                literalCounter = n_vars_used;
             }
         }
     }
