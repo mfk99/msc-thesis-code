@@ -1380,7 +1380,7 @@ void encodeMaxDaysConstraints(void *solver,
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        int D = 4;
+        int D = 0;
         std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
@@ -1410,7 +1410,15 @@ void encodeMaxDaysConstraints(void *solver,
         tot_encode_ub(tot, D, D, &literalCounter, ipamirClauseCollector, solver);
         tot_drop(tot);
         // Last literal represents whether at-most-k holds
-        ipamir_add_soft_lit(solver, literalCounter, penalty);
+        if (required)
+        {
+            ipamir_add_hard(solver, -literalCounter);
+            ipamir_add_hard(solver, 0);
+        }
+        else
+        {
+            ipamir_add_soft_lit(solver, literalCounter, penalty);
+        }
         verboseLog("Added literals :" + to_string(initialLiteralCounter) + " - " + to_string(literalCounter) + " for at-most-k encoding MaxDays");
         literalCounter++;
 
