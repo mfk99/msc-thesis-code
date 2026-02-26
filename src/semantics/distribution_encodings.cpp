@@ -607,7 +607,6 @@ void encodeDifferentDaysConstraint(void *solver,
     }
 }
 
-// Encode SameWeeks constraints
 void encodeSameWeeksConstraints(void *solver,
                                 uint32_t literalCounter,
                                 int weeks,
@@ -670,7 +669,7 @@ void encodeSameWeeksConstraints(void *solver,
         }
     }
 }
-// Encode DifferentWeeks constraints
+
 void encodeDifferentWeeksConstraints(void *solver,
                                      uint32_t literalCounter,
                                      int weeks,
@@ -729,7 +728,7 @@ void encodeDifferentWeeksConstraints(void *solver,
         }
     }
 }
-// Encode SameRoom constraints
+
 void encodeSameRoomConstraints(void *solver,
                                uint32_t literalCounter,
                                vector<vector<int>> r,
@@ -783,7 +782,6 @@ void encodeSameRoomConstraints(void *solver,
     }
 }
 
-// Encode DifferentRoom constraints
 void encodeDifferentRoomConstraints(void *solver,
                                     uint32_t literalCounter,
                                     vector<vector<int>> r,
@@ -836,7 +834,6 @@ void encodeDifferentRoomConstraints(void *solver,
     }
 }
 
-// Encode OverLap constraints
 // TODO: refactor this ASAP, a single for-loop shouldn't be 100 lines long
 void encodeOverLapConstraints(void *solver,
                               uint32_t literalCounter,
@@ -937,7 +934,6 @@ void encodeOverLapConstraints(void *solver,
     }
 }
 
-// Encode NotOverLap constraints
 void encodeNotOverLapConstraints(void *solver,
                                  uint32_t literalCounter,
                                  int weeks,
@@ -1014,7 +1010,6 @@ void encodeNotOverLapConstraints(void *solver,
     }
 }
 
-// Encode SameAttendees constraints
 void encodeSameAttendeesConstraints(void *solver,
                                     uint32_t literalCounter,
                                     int weeks,
@@ -1106,7 +1101,6 @@ void encodeSameAttendeesConstraints(void *solver,
     }
 }
 
-// Encode WorkDay constraints
 void encodeWorkDayConstraints(void *solver,
                               uint32_t literalCounter,
                               int weeks,
@@ -1180,7 +1174,6 @@ void encodeWorkDayConstraints(void *solver,
     }
 }
 
-// Encode Precedence constraints
 // TODO: refactor this, too long and convoluted
 void encodePrecedenceConstraints(void *solver,
                                  uint32_t literalCounter,
@@ -1291,7 +1284,6 @@ void encodePrecedenceConstraints(void *solver,
     }
 }
 
-// Encode MinGap Constraints
 void encodeMinGapConstraints(void *solver,
                              uint32_t literalCounter,
                              int weeks,
@@ -1373,7 +1365,6 @@ void encodeMinGapConstraints(void *solver,
     }
 }
 
-// Encode MaxDays Constraints
 void encodeMaxDaysConstraints(void *solver,
                               uint32_t literalCounter,
                               int weeks,
@@ -1454,7 +1445,6 @@ void encodeMaxDaysConstraints(void *solver,
     }
 }
 
-// Encode MaxDayLoad Constraints
 // TODO: Correct penalty calculation
 void encodeMaxDayLoadConstraints(void *solver,
                                  uint32_t literalCounter,
@@ -1527,7 +1517,6 @@ void encodeMaxDayLoadConstraints(void *solver,
     }
 }
 
-// Encode MaxBreaks Constraints
 // TODO: Make this work with variable amount of courses
 void encodeMaxBreaksConstraints(void *solver,
                                 uint32_t literalCounter,
@@ -1615,7 +1604,6 @@ void encodeMaxBreaksConstraints(void *solver,
     }
 }
 
-// Encode MaxBlocks Constraints
 void encodeMaxBlocksConstraints(void *solver,
                                 uint32_t literalCounter,
                                 int weeks,
