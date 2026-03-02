@@ -1525,11 +1525,11 @@ void encodeMaxDayLoadConstraints(void *solver,
     }
 }
 
-// TODO: Make this work with variable amount of courses
 void encodeMaxBreaksConstraints(void *solver,
                                 uint32_t literalCounter,
                                 int weeks,
                                 int days,
+                                int timeSlots,
                                 vector<vector<int>> t,
                                 map<string, Class> classMap,
                                 map<string, int> classIndexMap,
@@ -1541,9 +1541,9 @@ void encodeMaxBreaksConstraints(void *solver,
         bool required;
         int penalty;
         // Max n.o. blocks
-        int maxBreaksR = 0;
+        int R = 0;
         // Length of blocks
-        int maxBreaksS = 0;
+        int S = 0;
         std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
@@ -1551,62 +1551,128 @@ void encodeMaxBreaksConstraints(void *solver,
                     using T = std::decay_t<decltype(d)>;
                     if constexpr (std::is_same_v<T, MaxBreaksDistribution>)
                     {
-                        maxBreaksR = d.R;
-                        maxBreaksS = d.S;
+                        R = d.R;
+                        S = d.S;
                     } },
                    dist);
-        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+
+        for (int weekIndex = 0; weekIndex < weeks; weekIndex++)
         {
-            string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
-
-            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            for (int dayIndex = 0; dayIndex < days; dayIndex++)
             {
-                string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
-                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                vector<int> literalVec;
+                vector<Timing> timingVec;
+                for (string classId : distributionClasses)
                 {
-                    Timing timing1 = class1.timings[class1TimingIndex];
-                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    Class classObj = classMap[classId];
+                    for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                     {
-                        Timing timing2 = class2.timings[class2TimingIndex];
-                        bool constraintEncoded = false;
-                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
-                        {
-                            string timing1Weeks = timing1.weeks;
-                            string timing2Weeks = timing2.weeks;
-                            if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
-                                continue;
-
-                            for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
-                            {
-                                string timing1Days = timing1.days;
-                                string timing2Days = timing2.days;
-                                if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
-                                    continue;
-
-                                int timing1End = timing1.start + timing1.length;
-                                int timing2End = timing2.start + timing2.length;
-                                int breakLength = min(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
-
-                                if (maxBreaksS < breakLength)
-                                {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    verboseLog("Adding MaxBreaks(" + to_string(maxBreaksR) + "," + to_string(maxBreaksS) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
-                                    ipamirAddClause(solver,
-                                                    {-periodLit1, -periodLit2},
-                                                    literalCounter,
-                                                    required,
-                                                    penalty);
-                                    constraintEncoded = true;
-                                }
-                            }
-                        }
+                        Timing timing = classObj.timings[timingIndex];
+                        if (timing.weeks[weekIndex] == '0' || timing.days[dayIndex] == '0')
+                            continue;
+                        int timingLiteral = t[classIndexMap[classId]][timingIndex];
+                        literalVec.push_back(timingLiteral);
+                        timingVec.push_back(timing);
                     }
                 }
+
+                if (literalVec.size() < 2)
+                    continue;
+
+                // Create auxiliary literals for timeslots
+                vector<int> slotLiterals = {};
+                for (int timeSlotIndex = 0; timeSlotIndex < timeSlots; timeSlotIndex++)
+                {
+                    // Collect overlapping timing literals
+                    vector<int> timeSlotLiterals;
+                    for (long unsigned int timingIndex = 0; timingIndex < timingVec.size(); timingIndex++)
+                    {
+                        Timing timing = timingVec[timingIndex];
+                        if (timing.start <= timeSlotIndex && timeSlotIndex < timing.start + timing.length)
+                        {
+                            timeSlotLiterals.push_back(literalVec[timingIndex]);
+                        }
+                    }
+
+                    int startLiteral = literalCounter;
+                    literalCounter++;
+                    slotLiterals.push_back(startLiteral);
+                    if (timeSlotLiterals.size() == 0)
+                        continue;
+
+                    // Slot literal <-> overlapping timing literals
+                    ipamir_add_hard(solver, -startLiteral);
+                    for (int literal : timeSlotLiterals)
+                    {
+                        ipamir_add_hard(solver, literal);
+                    }
+                    ipamir_add_hard(solver, 0);
+
+                    ipamir_add_hard(solver, startLiteral);
+                    for (int literal : timeSlotLiterals)
+                    {
+                        ipamir_add_hard(solver, -literal);
+                    }
+                    ipamir_add_hard(solver, 0);
+                }
+
+                // Create auxiliary literals for block beginnings
+                vector<int> beginningLiterals;
+                for (long unsigned int slotIndex = 0; slotIndex < slotLiterals.size(); slotIndex++)
+                {
+                    beginningLiterals.push_back(literalCounter);
+                    literalCounter++;
+                }
+
+                // Create encoding for block beginnings
+                // beginning_i -> no occupancies in last S+1 slots and occupied at slot i
+                for (int slotIndex = 0; slotIndex < int(slotLiterals.size()); slotIndex++)
+                {
+                    int beginningLiteral = beginningLiterals[slotIndex];
+                    int timeslotLiteral = slotLiterals[slotIndex];
+                    ipamir_add_hard(solver, -beginningLiteral);
+                    ipamir_add_hard(solver, timeslotLiteral);
+                    ipamir_add_hard(solver, 0);
+                    for (int offset = 1; offset <= S + 1 && 0 <= slotIndex - offset; offset++)
+                    {
+                        int previousTimeslotLiteral = slotLiterals[slotIndex - offset];
+                        ipamir_add_hard(solver, -beginningLiteral);
+                        ipamir_add_hard(solver, -previousTimeslotLiteral);
+                        ipamir_add_hard(solver, 0);
+                    }
+
+                    // no occupancies in last S+1 slots and occupied at slot i -> beginning_i
+                    ipamir_add_hard(solver, beginningLiteral);
+                    ipamir_add_hard(solver, -timeslotLiteral);
+                    for (int offset = 1; offset <= S + 1 && 0 <= slotIndex - offset; offset++)
+                    {
+                        int previousTimeslotLiteral = slotLiterals[slotIndex - offset];
+                        ipamir_add_hard(solver, previousTimeslotLiteral);
+                    }
+                    ipamir_add_hard(solver, 0);
+                }
+
+                // Encode am-k starts
+                int initialLiteralCounter = literalCounter;
+                Totalizer *tot = tot_new();
+                for (int beginningLiteral : beginningLiterals)
+                    tot_add(tot, beginningLiteral);
+                tot_reserve(tot, &literalCounter);
+                tot_encode_ub(tot, R + 1, R + 1, &literalCounter, ipamirClauseCollector, solver);
+                tot_drop(tot);
+
+                // Last literal represents whether at-most-k holds
+                int amkLiteral = literalCounter - 1;
+                if (required)
+                {
+                    ipamir_add_hard(solver, int32_t(-amkLiteral));
+                    ipamir_add_hard(solver, 0);
+                }
+                else
+                {
+                    ipamir_add_soft_lit(solver, amkLiteral, penalty);
+                }
+                verboseLog("Added literals :" + to_string(initialLiteralCounter) + " - " + to_string(amkLiteral) + " for at-most-k encoding MaxBreaks(" + to_string(R) + "," + to_string(S) + ")\n");
             }
         }
     }
@@ -1702,7 +1768,7 @@ void encodeConstraints(void *solver,
                        uint32_t literalCounter,
                        int weeks,
                        int days,
-                       int hours,
+                       int timeSlots,
                        int classes,
                        vector<vector<int>> t,
                        vector<vector<int>> r,
@@ -1737,6 +1803,6 @@ void encodeConstraints(void *solver,
     encodeMinGapConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MinGap"]);
     encodeMaxDaysConstraints(solver, literalCounter, weeks, days, t, classVec, classMap, classIndexMap, distributionsMap["MaxDays"]);
     encodeMaxDayLoadConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxDayLoad"]);
-    encodeMaxBreaksConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxBreaks"]);
+    encodeMaxBreaksConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBreaks"]);
     encodeMaxBlocksConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxBlocks"]);
 }
