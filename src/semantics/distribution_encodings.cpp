@@ -1693,8 +1693,10 @@ void encodeViolatingBlocks(
     void *solver,
     uint32_t literalCounter,
     vector<tuple<int, int, Timing>> &timingVec,
-    vector<int> literals,
-    set<int> classIds,
+    vector<int> &auxLiterals,
+    set<vector<int>> &encodedClauses,
+    vector<bool> &usedClasses,
+    map<pair<int, int>, int> &startLenVar,
     int index,
     int start,
     int end,
@@ -1705,54 +1707,59 @@ void encodeViolatingBlocks(
 {
     for (int next = index + 1; next < (int)timingVec.size(); next++)
     {
-        auto tup = timingVec[next];
+        tuple<int, int, Timing> timingTuple = timingVec[next];
 
-        int timingLiteral = get<0>(tup);
-        int classId = get<1>(tup);
-        Timing timing = get<2>(tup);
+        int classId = get<1>(timingTuple);
+        Timing timing = get<2>(timingTuple);
 
-        // only one timing per class
-        if (classIds.count(classId))
+        if (usedClasses[classId])
             continue;
 
-        // check block gap
         if (timing.start - end > S)
             break;
 
         int newEnd = max(end, timing.start + timing.length);
         int span = newEnd - start;
 
-        vector<int> newLiterals = literals;
-        newLiterals.push_back(timingLiteral);
+        pair<int, int> key = {timing.start, timing.length};
+        int aux = startLenVar[key];
 
-        set<int> newClasses = classIds;
-        newClasses.insert(classId);
+        auxLiterals.push_back(aux);
+        usedClasses[classId] = true;
 
-        // violation detected
-        if (span > M && newLiterals.size() >= 2)
+        if (span > M && auxLiterals.size() >= 2)
         {
             vector<int> clause;
-            for (int l : newLiterals)
+            for (int l : auxLiterals)
                 clause.push_back(-l);
+            sort(clause.begin(), clause.end());
 
-            ipamirAddClause(solver, clause, literalCounter, required, penalty);
-            if (verbose)
+            // Check if clause already encoded
+            if (encodedClauses.insert(clause).second)
             {
-                cout << "[VERBOSE] MaxBlock encoding found violating block [ ";
-                for (int l : newLiterals)
-                    cout << l << " ";
-                cout << "] \n";
+                ipamirAddClause(solver, clause, literalCounter, required, penalty);
+                if (verbose)
+                {
+                    cout << "[VERBOSE] Found MaxBlock violation: [ ";
+                    for (int l : auxLiterals)
+                        cout << l << " ";
+                    cout << "]\n";
+                }
             }
-            continue;
+            auxLiterals.pop_back();
+            usedClasses[classId] = false;
+
+            continue; // do not recurse further
         }
 
-        // extend block
         encodeViolatingBlocks(
             solver,
             literalCounter,
             timingVec,
-            newLiterals,
-            newClasses,
+            auxLiterals,
+            encodedClauses,
+            usedClasses,
+            startLenVar,
             next,
             start,
             newEnd,
@@ -1760,6 +1767,9 @@ void encodeViolatingBlocks(
             S,
             required,
             penalty);
+
+        auxLiterals.pop_back();
+        usedClasses[classId] = false;
     }
 }
 
@@ -1798,6 +1808,7 @@ void encodeMaxBlockConstraints(void *solver,
             for (int dayIndex = 0; dayIndex < days; dayIndex++)
             {
                 vector<tuple<int, int, Timing>> timingVec;
+                set<vector<int>> encodedClauses;
                 for (string classId : distributionClasses)
                 {
                     Class classObj = classMap[classId];
@@ -1842,17 +1853,25 @@ void encodeMaxBlockConstraints(void *solver,
                 for (int index = 0; index < int(timingVec.size()); index++)
                 {
                     tuple<int, int, Timing> tuple = timingVec[index];
-                    int literal = get<0>(tuple);
                     int classId = get<1>(tuple);
                     Timing timing = get<2>(tuple);
                     int start = timing.start;
                     int end = timing.start + timing.length;
+                    pair<int, int> key = {timing.start, timing.length};
+                    int aux = startLenVar[key];
+
+                    vector<int> auxLiterals = {aux};
+                    vector<bool> usedClasses(classIndexMap.size(), false);
+                    usedClasses[classId] = true;
+
                     encodeViolatingBlocks(
                         solver,
                         literalCounter,
                         timingVec,
-                        {literal},
-                        {classId},
+                        auxLiterals,
+                        encodedClauses,
+                        usedClasses,
+                        startLenVar,
                         index,
                         start,
                         end,
