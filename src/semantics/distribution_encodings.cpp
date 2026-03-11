@@ -3,12 +3,16 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <numeric>
+#include <functional>
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
 #include "../am1/am1_encoder.h"
 #include "../../../../ipamir.h"
 #include "../../../../rustsat/capi/rustsat.h"
+#include <algorithm>
+#include <set>
 
 using namespace std;
 using namespace RustSAT;
@@ -1678,24 +1682,106 @@ void encodeMaxBreaksConstraints(void *solver,
     }
 }
 
-void encodeMaxBlocksConstraints(void *solver,
-                                uint32_t literalCounter,
-                                int weeks,
-                                int days,
-                                vector<vector<int>> t,
-                                map<string, Class> classMap,
-                                map<string, int> classIndexMap,
-                                vector<DistributionVariant> distributions)
+bool timingComp(tuple<int, int, Timing> a, tuple<int, int, Timing> b)
+{
+    Timing aTiming = get<Timing>(a);
+    Timing bTiming = get<Timing>(b);
+    return aTiming.start < bTiming.start;
+}
+
+void encodeViolatingBlocks(
+    void *solver,
+    uint32_t literalCounter,
+    vector<tuple<int, int, Timing>> &timingVec,
+    vector<int> literals,
+    set<int> classIds,
+    int index,
+    int start,
+    int end,
+    int M,
+    int S,
+    bool required,
+    int penalty)
+{
+    for (int next = index + 1; next < (int)timingVec.size(); next++)
+    {
+        auto tup = timingVec[next];
+
+        int timingLiteral = get<0>(tup);
+        int classId = get<1>(tup);
+        Timing timing = get<2>(tup);
+
+        // only one timing per class
+        if (classIds.count(classId))
+            continue;
+
+        // check block gap
+        if (timing.start - end > S)
+            break;
+
+        int newEnd = max(end, timing.start + timing.length);
+        int span = newEnd - start;
+
+        vector<int> newLiterals = literals;
+        newLiterals.push_back(timingLiteral);
+
+        set<int> newClasses = classIds;
+        newClasses.insert(classId);
+
+        // violation detected
+        if (span > M && newLiterals.size() >= 2)
+        {
+            vector<int> clause;
+            for (int l : newLiterals)
+                clause.push_back(-l);
+
+            ipamirAddClause(solver, clause, literalCounter, required, penalty);
+            if (verbose)
+            {
+                cout << "[VERBOSE] MaxBlock encoding found violating block [ ";
+                for (int l : newLiterals)
+                    cout << l << " ";
+                cout << "] \n";
+            }
+            continue;
+        }
+
+        // extend block
+        encodeViolatingBlocks(
+            solver,
+            literalCounter,
+            timingVec,
+            newLiterals,
+            newClasses,
+            next,
+            start,
+            newEnd,
+            M,
+            S,
+            required,
+            penalty);
+    }
+}
+
+void encodeMaxBlockConstraints(void *solver,
+                               uint32_t literalCounter,
+                               int weeks,
+                               int days,
+                               int timeSlots,
+                               vector<vector<int>> t,
+                               map<string, Class> classMap,
+                               map<string, int> classIndexMap,
+                               vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
     {
         vector<string> distributionClasses;
         bool required;
         int penalty;
-        // Max n.o. blocks
-        int maxBlocksM = 0;
+        // Max block length
+        int M = 0;
         // Required break length
-        int maxBlocksS = 0;
+        int S = 0;
         std::visit([&](auto &d)
                    { distributionClasses = d.classes;
                     required = d.required;
@@ -1703,61 +1789,77 @@ void encodeMaxBlocksConstraints(void *solver,
                     using T = std::decay_t<decltype(d)>;
                     if constexpr (std::is_same_v<T, MaxBlockDistribution>)
                     {
-                        maxBlocksM = d.M;
-                        maxBlocksS = d.S;
+                        M = d.M;
+                        S = d.S;
                     } },
                    dist);
-        for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
+        for (int weekIndex = 0; weekIndex < weeks; weekIndex++)
         {
-            string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
-
-            for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
+            for (int dayIndex = 0; dayIndex < days; dayIndex++)
             {
-                string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
-                for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                vector<tuple<int, int, Timing>> timingVec;
+                for (string classId : distributionClasses)
                 {
-                    Timing timing1 = class1.timings[class1TimingIndex];
-                    for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                    Class classObj = classMap[classId];
+                    for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                     {
-                        Timing timing2 = class2.timings[class2TimingIndex];
-                        bool constraintEncoded = false;
-                        for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
-                        {
-                            string timing1Weeks = timing1.weeks;
-                            string timing2Weeks = timing2.weeks;
-                            if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
-                                continue;
-
-                            for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
-                            {
-                                string timing1Days = timing1.days;
-                                string timing2Days = timing2.days;
-                                if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
-                                    continue;
-
-                                int timing1End = timing1.start + timing1.length;
-                                int timing2End = timing2.start + timing2.length;
-                                int breakLength = min(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
-                                int blockLength = max(abs(timing1End - timing2.start), abs(timing2End - timing1.start));
-                                if (maxBlocksM < blockLength && breakLength < maxBlocksS)
-                                {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
-                                    verboseLog("Adding MaxBlocks(" + to_string(maxBlocksM) + "," + to_string(maxBlocksS) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
-                                    ipamirAddClause(solver,
-                                                    {-periodLit1, -periodLit2},
-                                                    literalCounter,
-                                                    required,
-                                                    penalty);
-                                    constraintEncoded = true;
-                                }
-                            }
-                        }
+                        Timing timing = classObj.timings[timingIndex];
+                        if (timing.weeks[weekIndex] == '0' || timing.days[dayIndex] == '0')
+                            continue;
+                        int timingLiteral = t[classIndexMap[classId]][timingIndex];
+                        int classIdx = classIndexMap[classId];
+                        timingVec.push_back({timingLiteral, classIdx, timing});
                     }
+                }
+
+                if (timingVec.size() < 2)
+                    // Only one class on given day, no encoding needed
+                    continue;
+
+                // Create b_i <-> timings occuring at i
+                map<pair<int, int>, int> startLenVar;
+                for (tuple<int, int, Timing> tuple : timingVec)
+                {
+                    Timing timing = get<2>(tuple);
+                    pair<int, int> key = {timing.start, timing.length};
+
+                    if (!startLenVar.count(key))
+                    {
+                        startLenVar[key] = literalCounter++;
+                    }
+
+                    int timingLiteral = get<0>(tuple);
+
+                    ipamir_add_hard(solver, -timingLiteral);
+                    ipamir_add_hard(solver, startLenVar[key]);
+                    ipamir_add_hard(solver, 0);
+                    verboseLog("Added clause " + to_string(timingLiteral) + " <-> " + to_string(startLenVar[key]));
+                }
+
+                sort(timingVec.begin(), timingVec.end(), timingComp);
+
+                // Check each timing for violating blocks
+                for (int index = 0; index < int(timingVec.size()); index++)
+                {
+                    tuple<int, int, Timing> tuple = timingVec[index];
+                    int literal = get<0>(tuple);
+                    int classId = get<1>(tuple);
+                    Timing timing = get<2>(tuple);
+                    int start = timing.start;
+                    int end = timing.start + timing.length;
+                    encodeViolatingBlocks(
+                        solver,
+                        literalCounter,
+                        timingVec,
+                        {literal},
+                        {classId},
+                        index,
+                        start,
+                        end,
+                        M,
+                        S,
+                        required,
+                        penalty);
                 }
             }
         }
@@ -1804,5 +1906,5 @@ void encodeConstraints(void *solver,
     encodeMaxDaysConstraints(solver, literalCounter, weeks, days, t, classVec, classMap, classIndexMap, distributionsMap["MaxDays"]);
     encodeMaxDayLoadConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxDayLoad"]);
     encodeMaxBreaksConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBreaks"]);
-    encodeMaxBlocksConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxBlocks"]);
+    encodeMaxBlockConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBlock"]);
 }
