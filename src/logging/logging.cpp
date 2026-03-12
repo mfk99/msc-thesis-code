@@ -28,6 +28,8 @@ void logTimingLiterals(vector<vector<int>> t)
 
 void logRoomLiterals(vector<vector<int>> r)
 {
+    if (!verbose)
+        return;
     verboseLog("room literals: ");
     for (vector<int> classRooms : r)
     {
