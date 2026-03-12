@@ -1529,6 +1529,7 @@ void encodeMaxDayLoadConstraints(void *solver,
     }
 }
 
+// TODO: Check penalty calculation matches ITC
 void encodeMaxBreaksConstraints(void *solver,
                                 uint32_t literalCounter,
                                 int weeks,
@@ -1773,6 +1774,7 @@ void encodeViolatingBlocks(
     }
 }
 
+// TODO: Check penalty calculation matches ITC
 void encodeMaxBlockConstraints(void *solver,
                                uint32_t literalCounter,
                                int weeks,

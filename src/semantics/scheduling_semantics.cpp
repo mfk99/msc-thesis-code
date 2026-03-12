@@ -40,13 +40,13 @@ void runBenchMark()
     int courses = generationVariables[4];
     int courseHours = generationVariables[5];
 
-    int periods = weeks * days * hours;
-    int classes = courses * courseHours;
-
     void *solver = ipamir_init();
 
     map<string, Class> classMap = getClasses();
     map<string, int> classIndexMap;
+
+    int periods = weeks * days * hours;
+    int classes = classMap.size();
 
     vector<Class> classVec;
     int index = 0;
