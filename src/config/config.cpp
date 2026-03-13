@@ -17,6 +17,28 @@ largely adheres to the ITC 2019 data format.
 More info available at: https://www.itc2019.org/format
 */
 
+xml_document openXmlFile()
+{
+    char *filePathChar = new char[filePath.length() + 1];
+    strcpy(filePathChar, filePath.c_str());
+    xml_document doc;
+    xml_parse_result result = doc.load_file(filePathChar);
+
+    if (!result)
+    {
+        cout << "[ERROR] Error when loading file: \n"
+             << result.description()
+             << " \nExiting... \n";
+        exit(1);
+    }
+    else
+    {
+        if (verbose)
+            cout << "[VERBOSE] File loaded successfully \n";
+        return doc;
+    }
+}
+
 void generateConfig(vector<int> configVariables)
 {
     int weeks = configVariables[0];
@@ -185,12 +207,7 @@ void generateConfig(vector<int> configVariables)
 
 vector<int> getConfigVariables()
 {
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
-    xml_document doc;
-    xml_parse_result result = doc.load_file(filePathChar);
-    if (verbose)
-        cout << "[VERBOSE] Load result: " << result.description() << "\n";
+    xml_document doc = openXmlFile();
 
     xml_node problemNode = doc.child("problem");
     int weeks = problemNode.attribute("nrWeeks").as_int();
@@ -216,13 +233,7 @@ vector<int> getConfigVariables()
 
 vector<vector<string>> getCourseNames()
 {
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
-    xml_document doc;
-    xml_parse_result result = doc.load_file(filePathChar);
-    if (verbose)
-        cout << "[VERBOSE] Load result: " << result.description() << "\n";
-
+    xml_document doc = openXmlFile();
     xml_node coursesNode = doc.child("problem").child("courses");
     vector<vector<string>> classNames;
     for (xml_node courseNode : coursesNode.children())
@@ -241,14 +252,7 @@ vector<vector<string>> getCourseNames()
 map<string, Class> getClasses()
 {
     map<string, Class> classes;
-
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
-    xml_document doc;
-    xml_parse_result result = doc.load_file(filePathChar);
-    if (verbose)
-        cout << "[VERBOSE] Load result: " << result.description() << "\n";
-
+    xml_document doc = openXmlFile();
     xml_node coursesNode = doc.child("problem").child("courses");
 
     for (xml_node courseNode : coursesNode.children())
@@ -321,13 +325,7 @@ map<string, Class> getClasses()
 
 vector<vector<vector<vector<int>>>> getRoomAvailability()
 {
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
-    xml_document doc;
-    xml_parse_result result = doc.load_file(filePathChar);
-    if (verbose)
-        cout << "[VERBOSE] Load result: " << result.description() << "\n";
-
+    xml_document doc = openXmlFile();
     xml_node problemNode = doc.child("problem");
     int weeks = problemNode.attribute("nrWeeks").as_int();
     int days = problemNode.attribute("nrDays").as_int();
@@ -471,11 +469,7 @@ map<string, vector<DistributionVariant>> getDistributions()
 {
     map<string, vector<DistributionVariant>> distributions;
 
-    xml_document doc;
-    xml_parse_result result = doc.load_file(filePath.c_str());
-    if (verbose)
-        cout << "[VERBOSE] Load result: " << result.description() << "\n";
-
+    xml_document doc = openXmlFile();
     xml_node distributionsNode = doc.child("problem").child("distributions");
 
     for (xml_node distributionNode : distributionsNode.children())
