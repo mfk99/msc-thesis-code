@@ -4,28 +4,17 @@
 #include <map>
 #include <string>
 #include <chrono>
+#include <algorithm>
+#include <unordered_map>
 #include "distribution_encodings.h"
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
 #include "../../../../ipamir.h"
-#include <algorithm>
-#include <unordered_map>
 #include "../am1/am1_encoder.h"
+#include "../ipamir_utils/ipamir_clause_collector.h"
 
 using namespace std;
-
-// TODO: Move these to a collector file
-void ipamirTempClauseCollector(int lit, void *solver)
-{
-    ipamir_add_hard(solver, lit);
-}
-
-void ipamirTempGteClauseCollector(int lit, void *solver)
-{
-    ipamir_add_hard(solver, lit);
-    ipamir_add_hard(solver, 0);
-}
 
 vector<StudentCluster> createStudentClusters(vector<Student> students, vector<HierarchyCourse> hierarchyVec, uint32_t literalCounter)
 {
@@ -195,7 +184,7 @@ void encodeExactlyOneConfig(void *solver,
                 cout << lit << ",";
             am1Encoder.am1encoder_add(lit);
         }
-        am1Encoder.am1encoder_encode(&literalCounter, ipamirTempClauseCollector, solver);
+        am1Encoder.am1encoder_encode(&literalCounter, ipamirClauseCollector, solver);
         if (verbose)
             cout << "0] \n";
         am1Encoder.am1encoder_drop();
@@ -245,8 +234,8 @@ void encodeClassCapacityConstraints(void *solver,
                     }
                     uint32_t n_vars_used = literalCounter - 1;
                     gte_reserve(genTot, &n_vars_used);
-                    gte_encode_ub(genTot, hClass.limit, hClass.limit, &n_vars_used, ipamirTempGteClauseCollector, solver);
-                    gte_enforce_ub(genTot, hClass.limit, ipamirTempGteClauseCollector, solver);
+                    gte_encode_ub(genTot, hClass.limit, hClass.limit, &n_vars_used, ipamirClauseCollector, solver);
+                    gte_enforce_ub(genTot, hClass.limit, ipamirGteClauseCollector, solver);
                     gte_drop(genTot);
                     literalCounter = n_vars_used;
                 }

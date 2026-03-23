@@ -10,6 +10,8 @@ SRCS = \
  src/scheduling_encoding_generator/scheduling_encoding_generator.cpp \
  src/config/config.cpp \
  src/am1/am1_encoder.cpp \
+ src/ipamir_utils/ipamir_clause_builder.cpp \
+ src/ipamir_utils/ipamir_clause_collector.cpp \
  src/logging/logging.cpp \
  libs/pugixml/src/pugixml.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)

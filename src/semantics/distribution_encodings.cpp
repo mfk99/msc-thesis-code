@@ -5,88 +5,19 @@
 #include <string>
 #include <numeric>
 #include <functional>
+#include <algorithm>
+#include <set>
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
 #include "../am1/am1_encoder.h"
 #include "../../../../ipamir.h"
 #include "../../../../rustsat/capi/rustsat.h"
-#include <algorithm>
-#include <set>
+#include "../ipamir_utils/ipamir_clause_builder.h"
+#include "../ipamir_utils/ipamir_clause_collector.h"
 
 using namespace std;
 using namespace RustSAT;
-
-struct ClauseCollectorData
-{
-    void *solver;
-    bool required;
-    int penalty;
-};
-
-void ipamirGteClauseCollector(int lit, void *collectorData)
-{
-    ClauseCollectorData *data = static_cast<ClauseCollectorData *>(collectorData);
-    if (data->required)
-    {
-        ipamir_add_hard(data->solver, lit);
-        ipamir_add_hard(data->solver, 0);
-        verboseLog("Adding hard clause [" + to_string(lit) + ",0]");
-    }
-    else
-    {
-        ipamir_add_soft_lit(data->solver, abs(lit), data->penalty);
-        verboseLog("Adding soft lit: " + to_string(abs(lit)) + " with penalty: " + to_string(data->penalty));
-    }
-}
-
-void ipamirClauseCollector(int lit, void *solver)
-{
-    ipamir_add_hard(solver, lit);
-}
-
-void ipamirAddSoftClause(void *solver, vector<int> clause, uint32_t &literalCount, int penalty)
-{
-    if (clause.size() == 1)
-    {
-        verboseLog("Adding a unit soft literal " + to_string(clause[0]) + " with weight " + to_string(penalty));
-        ipamir_add_soft_lit(solver, clause[0], penalty);
-        return;
-    }
-
-    int softLit = literalCount;
-    literalCount += 1;
-    ipamir_add_soft_lit(solver, softLit, penalty);
-    if (verbose)
-        cout << "[VERBOSE] Adding soft literal " << softLit << " with weight " << penalty << " and clause ";
-
-    for (int literal : clause)
-    {
-        ipamir_add_hard(solver, literal);
-        if (verbose)
-            cout << literal << ", ";
-    }
-    ipamir_add_hard(solver, softLit);
-    ipamir_add_hard(solver, 0);
-    if (verbose)
-        cout << softLit << ", 0\n";
-}
-
-void ipamirAddClause(void *solver, vector<int> clause, uint32_t &literalCount, bool hardClause, int penalty = 0)
-{
-    if (hardClause)
-    {
-        for (int literal : clause)
-        {
-            ipamir_add_hard(solver, literal);
-        }
-        ipamir_add_hard(solver, 0);
-    }
-    else
-    {
-        ipamirAddSoftClause(solver, clause, literalCount, penalty);
-    }
-}
 
 void encodeAtLeast1Timing(void *solver, int classes, vector<vector<int>> t)
 {

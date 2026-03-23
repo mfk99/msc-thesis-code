@@ -181,8 +181,7 @@ void runBenchMark()
                      << " slot(s) to room " << roomId << "\n";
             }
 
-            // cout << s[0][0].classId;
-
+            // TODO: Fix cluster assignment printing
             for (vector<DecisionVar> clusterAssignment : s)
             {
                 vector<string> classIds;
