@@ -177,13 +177,16 @@ void encodeAssignmentPenalties(void *solver,
 {
     for (long long classIndex = 0; classIndex < classes; classIndex++)
     {
+        // cout << "classIndex: " << classIndex << "\n";
         Class classObj = classVec[classIndex];
         for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
         {
             Timing timing = classObj.timings[timingIndex];
+            // cout << "timingIndex: " << timingIndex << "\n";
             if (timing.penalty != 0)
             {
                 int timingLit = t[classIndex][timingIndex];
+                // cout << "timingLit: " << timingLit << "\n";
                 ipamir_add_soft_lit(solver, timingLit, timing.penalty);
                 verboseLog("Adding penalty: " + to_string(timing.penalty) + " to timing literal: " + to_string(timingLit));
             }

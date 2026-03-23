@@ -259,8 +259,12 @@ map<string, Class> getClasses()
     {
         for (xml_node configNode : courseNode.children())
         {
+            // string configId = configNode.attribute("id").as_string();
+            // cout << "configId: " << configId << "\n";
             for (xml_node subpartNode : configNode.children())
             {
+                // string subPartId = subpartNode.attribute("id").as_string();
+                // cout << "subpartNode: " << subPartId << "\n";
                 for (xml_node classNode : subpartNode.children())
                 {
                     Class newClass;
@@ -321,6 +325,64 @@ map<string, Class> getClasses()
         }
     }
     return classes;
+}
+
+vector<HierarchyCourse> getClassHierarchy()
+{
+    xml_document doc = openXmlFile();
+    xml_node problemNode = doc.child("problem");
+    xml_node coursesNode = problemNode.child("courses");
+    vector<HierarchyCourse> courses;
+    for (xml_node courseNode : coursesNode.children())
+    {
+        HierarchyCourse newCourse;
+        newCourse.id = courseNode.attribute("id").as_string();
+        for (xml_node configNode : courseNode.children())
+        {
+            HierarchyConfiguration config;
+            config.id = configNode.attribute("id").as_string();
+            for (xml_node subPartNode : configNode.children())
+            {
+                HierarchySubpart subpart;
+                subpart.id = subPartNode.attribute("id").as_string();
+                for (xml_node classNode : subPartNode.children())
+                {
+                    HierarchyClass hierarchyClass;
+                    hierarchyClass.id = classNode.attribute("id").as_string();
+                    hierarchyClass.limit = classNode.attribute("limit").as_int();
+                    if (classNode.attribute("parent"))
+                        hierarchyClass.parentId = classNode.attribute("parent").as_string();
+                    else
+                        hierarchyClass.parentId = "";
+
+                    subpart.classes.push_back(hierarchyClass);
+                }
+                config.subparts.push_back(subpart);
+            }
+            newCourse.configs.push_back(config);
+        }
+        courses.push_back(newCourse);
+    }
+    return courses;
+}
+
+vector<Student> getStudents()
+{
+    xml_document doc = openXmlFile();
+    xml_node problemNode = doc.child("problem");
+    xml_node studentsNode = problemNode.child("students");
+    vector<Student> studentVec;
+    for (xml_node studentNode : studentsNode.children())
+    {
+        Student newStudent;
+        newStudent.id = studentNode.attribute("id").as_string();
+        for (xml_node courseNode : studentNode.children())
+        {
+            newStudent.classIds.push_back(courseNode.attribute("id").as_string());
+        }
+        studentVec.push_back(newStudent);
+    }
+    return studentVec;
 }
 
 vector<vector<vector<vector<int>>>> getRoomAvailability()

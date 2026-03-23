@@ -9,6 +9,7 @@
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
 #include "../../../../ipamir.h"
+#include "student_sectioning.h"
 
 using namespace std;
 
@@ -104,6 +105,8 @@ void runBenchMark()
     logTimingLiterals(t);
     logRoomLiterals(r);
 
+    vector<vector<DecisionVar>> s = encodeStudentSectioning(solver, literalCounter, weeks, days, t, classMap, classIndexMap);
+
     encodeConstraints(solver,
                       literalCounter,
                       weeks,
@@ -176,6 +179,40 @@ void runBenchMark()
                      << ", starting at slot: " << timingStart
                      << ", for " << timingLength
                      << " slot(s) to room " << roomId << "\n";
+            }
+
+            // cout << s[0][0].classId;
+
+            for (vector<DecisionVar> clusterAssignment : s)
+            {
+                vector<string> classIds;
+                for (DecisionVar var : clusterAssignment)
+                {
+                    if (ipamir_val_lit(solver, var.literal))
+                    {
+                        classIds.push_back(var.classId);
+                    }
+                }
+                cout << "Cluster [ ";
+                cout << clusterAssignment[0].cluster.students[0].id;
+                for (int i = 1; i < clusterAssignment[0].cluster.students.size(); i++)
+                {
+                    cout << ", " << clusterAssignment[0].cluster.students[i].id;
+                }
+                cout << " ] assigned to class ";
+                if (classIds.size() == 0)
+                {
+                    cout << "none? \n";
+                }
+                else
+                {
+                    cout << classIds[0];
+                    for (int i = 1; i < classIds.size(); i++)
+                    {
+                        cout << ", " << classIds[i];
+                    }
+                    cout << "\n";
+                }
             }
             uint64_t penalty = ipamir_val_obj(solver);
             cout << "Penalty incurred by the solution: " << penalty << "\n";
