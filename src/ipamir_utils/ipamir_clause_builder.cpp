@@ -2,7 +2,7 @@
 #include <vector>
 #include "../input_parser/input_parser.h"
 #include "../logging/logging.h"
-#include "../../../../ipamir.h"
+#include "../../libs/ipamir/ipamir.h"
 
 void ipamirAddSoftClause(void *solver, std::vector<int> clause, uint32_t &literalCount, int penalty)
 {

@@ -11,8 +11,8 @@
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
 #include "../am1/am1_encoder.h"
-#include "../../../../ipamir.h"
-#include "../../../../rustsat/capi/rustsat.h"
+#include "../../libs/ipamir/ipamir.h"
+#include "../../libs/rustsat/capi/rustsat.h"
 #include "../ipamir_utils/ipamir_clause_builder.h"
 #include "../ipamir_utils/ipamir_clause_collector.h"
 

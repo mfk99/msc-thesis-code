@@ -1,5 +1,5 @@
 #include "../logging/logging.h"
-#include "../../../../ipamir.h"
+#include "../../libs/ipamir/ipamir.h"
 
 struct ClauseCollectorData
 {

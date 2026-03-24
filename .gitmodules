@@ -1,3 +1,9 @@
 [submodule "libs/pugixml"]
 	path = libs/pugixml
 	url = git@github.com:zeux/pugixml.git
+[submodule "libs/rustsat"]
+	path = libs/rustsat
+	url = https://github.com/chrjabs/rustsat/
+[submodule "libs/ipamir"]
+	path = libs/ipamir
+	url = https://bitbucket.org/coreo-group/ipamir/src/master/

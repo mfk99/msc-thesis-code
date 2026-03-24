@@ -10,7 +10,7 @@
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
-#include "../../../../ipamir.h"
+#include "../../libs/ipamir/ipamir.h"
 #include "../am1/am1_encoder.h"
 #include "../ipamir_utils/ipamir_clause_collector.h"
 

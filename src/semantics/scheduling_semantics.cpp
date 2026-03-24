@@ -8,7 +8,7 @@
 #include "../logging/logging.h"
 #include "../input_parser/input_parser.h"
 #include "../config/config.h"
-#include "../../../../ipamir.h"
+#include "../../libs/ipamir/ipamir.h"
 #include "student_sectioning.h"
 
 using namespace std;

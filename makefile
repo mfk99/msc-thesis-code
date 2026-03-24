@@ -22,12 +22,12 @@ CXXFLAGS += -I/usr/include
 
 IPAMIRSOLVER ?= solver2022
 IPASIRSOLVER ?= minisat220
-RUSTSAT = ./../../rustsat/target/release/librustsat_capi.a
+RUSTSAT = ./libs/rustsat/target/release/librustsat_capi.a
 
-DEPS = ../../maxsat/$(IPAMIRSOLVER)/libipamir$(IPAMIRSOLVER).a
-LIBS = -L../../maxsat/$(IPAMIRSOLVER)/ -lipamir$(IPAMIRSOLVER)
-LIBS += $(shell cat ../../maxsat/$(IPAMIRSOLVER)/LIBS 2>/dev/null)
-LIBS += $(shell cat ../../maxsat/$(IPASIRSOLVER)/LIBS 2>/dev/null)
+DEPS = ./libs/ipamir/maxsat/$(IPAMIRSOLVER)/libipamir$(IPAMIRSOLVER).a
+LIBS = -L./libs/ipamir/maxsat/$(IPAMIRSOLVER)/ -lipamir$(IPAMIRSOLVER)
+LIBS += $(shell cat ./libs/ipamir/maxsat/$(IPAMIRSOLVER)/LIBS 2>/dev/null)
+LIBS += $(shell cat ./libs/ipamir/maxsat/$(IPASIRSOLVER)/LIBS 2>/dev/null)
 LIBS += $(RUSTSAT)
 LIBS += -ldl -lpthread -lm
 LIBS += -ljsoncpp
