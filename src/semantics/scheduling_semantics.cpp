@@ -13,6 +13,110 @@
 
 using namespace std;
 
+void logClassAssignments(void *solver,
+                         int classes,
+                         vector<Class> classVec,
+                         vector<vector<int>> t,
+                         vector<vector<int>> r)
+{
+    cout << "Assignment:\n";
+    for (int classIndex = 0; classIndex < classes; classIndex++)
+    {
+        Class classObj = classVec[classIndex];
+        string classId = classObj.id;
+        string timingWeeks = "",
+               timingDays = "";
+        int timingStart = 0,
+            timingLength = 0;
+
+        for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
+        {
+            int timingLit = t[classIndex][timingIndex];
+            if (0 < ipamir_val_lit(solver, timingLit))
+            {
+                Timing timing = classObj.timings[timingIndex];
+                timingWeeks = timing.weeks;
+                timingDays = timing.days;
+                timingStart = timing.start;
+                timingLength = timing.length;
+                verboseLog("timingLit: " + to_string(timingLit) + "=1");
+            }
+        }
+
+        string roomId = "";
+        if (classObj.rooms.size() == 0)
+        {
+            roomId = "[/]";
+            verboseLog("roomLit: -");
+        }
+        for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+        {
+            int roomLit = r[classIndex][roomIndex];
+            if (0 < ipamir_val_lit(solver, roomLit))
+            {
+                Room room = classObj.rooms[roomIndex];
+                roomId = room.id;
+                verboseLog("roomLit:" + to_string(roomLit) + "=1");
+            }
+        }
+
+        cout << "Class " << classId
+             << " is assigned to weeks: " << timingWeeks
+             << ", days: " << timingDays
+             << ", starting at slot: " << timingStart
+             << ", for " << timingLength
+             << " slot(s) to room " << roomId << "\n";
+    }
+}
+
+void logStudentSectioningAssignments(void *solver, StudentSectioningData sectioningData)
+{
+    vector<vector<DecisionVar>> s = sectioningData.s;
+    vector<ConfDecisionVar> conf = sectioningData.conf;
+    for (ConfDecisionVar clusterConfigAssignment : conf)
+    {
+        if (0 < ipamir_val_lit(solver, clusterConfigAssignment.literal))
+        {
+            cout << "Cluster "
+                 << clusterConfigAssignment.clusterId
+                 << " assigned to config "
+                 << clusterConfigAssignment.configId
+                 << "\n";
+        }
+    }
+    for (vector<DecisionVar> clusterAssignment : s)
+    {
+        vector<string> classIds;
+        for (DecisionVar var : clusterAssignment)
+        {
+            if (0 < ipamir_val_lit(solver, var.literal))
+            {
+                classIds.push_back(var.classId);
+            }
+        }
+        cout << "Cluster [ ";
+        cout << clusterAssignment[0].cluster.students[0].id;
+        for (int i = 1; i < clusterAssignment[0].cluster.students.size(); i++)
+        {
+            cout << ", " << clusterAssignment[0].cluster.students[i].id;
+        }
+        cout << " ] assigned to class ";
+        if (classIds.size() == 0)
+        {
+            cout << "none? \n";
+        }
+        else
+        {
+            cout << classIds[0];
+            for (int i = 1; i < classIds.size(); i++)
+            {
+                cout << ", " << classIds[i];
+            }
+            cout << "\n";
+        }
+    }
+}
+
 vector<int> parseUserClauseInput(string input)
 {
     vector<int> clauseLiterals;
@@ -106,8 +210,6 @@ void runBenchMark()
     logRoomLiterals(r);
 
     StudentSectioningData sectioningData = encodeStudentSectioning(solver, literalCounter, weeks, days, t, classMap, classIndexMap);
-    vector<vector<DecisionVar>> s = sectioningData.s;
-    vector<ConfDecisionVar> conf = sectioningData.conf;
 
     encodeConstraints(solver,
                       literalCounter,
@@ -134,97 +236,8 @@ void runBenchMark()
         cout << "Code returned by ipamir: " << code << "\n";
         if (code == 30)
         {
-            cout << "Assignment:\n";
-            for (int classIndex = 0; classIndex < classes; classIndex++)
-            {
-                Class classObj = classVec[classIndex];
-                string classId = classObj.id;
-                string timingWeeks = "",
-                       timingDays = "";
-                int timingStart = 0,
-                    timingLength = 0;
-
-                for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
-                {
-                    int timingLit = t[classIndex][timingIndex];
-                    if (0 < ipamir_val_lit(solver, timingLit))
-                    {
-                        Timing timing = classObj.timings[timingIndex];
-                        timingWeeks = timing.weeks;
-                        timingDays = timing.days;
-                        timingStart = timing.start;
-                        timingLength = timing.length;
-                        verboseLog("timingLit: " + to_string(timingLit) + "=1");
-                    }
-                }
-
-                string roomId = "";
-                if (classObj.rooms.size() == 0)
-                {
-                    roomId = "[/]";
-                    verboseLog("roomLit: -");
-                }
-                for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
-                {
-                    int roomLit = r[classIndex][roomIndex];
-                    if (0 < ipamir_val_lit(solver, roomLit))
-                    {
-                        Room room = classObj.rooms[roomIndex];
-                        roomId = room.id;
-                        verboseLog("roomLit:" + to_string(roomLit) + "=1");
-                    }
-                }
-
-                cout << "Class " << classId
-                     << " is assigned to weeks: " << timingWeeks
-                     << ", days: " << timingDays
-                     << ", starting at slot: " << timingStart
-                     << ", for " << timingLength
-                     << " slot(s) to room " << roomId << "\n";
-            }
-
-            for (ConfDecisionVar clusterConfigAssignment : conf)
-            {
-                if (0 < ipamir_val_lit(solver, clusterConfigAssignment.literal))
-                {
-                    cout << "Cluster "
-                         << clusterConfigAssignment.clusterId
-                         << " assigned to config "
-                         << clusterConfigAssignment.configId
-                         << "\n";
-                }
-            }
-            for (vector<DecisionVar> clusterAssignment : s)
-            {
-                vector<string> classIds;
-                for (DecisionVar var : clusterAssignment)
-                {
-                    if (0 < ipamir_val_lit(solver, var.literal))
-                    {
-                        classIds.push_back(var.classId);
-                    }
-                }
-                cout << "Cluster [ ";
-                cout << clusterAssignment[0].cluster.students[0].id;
-                for (int i = 1; i < clusterAssignment[0].cluster.students.size(); i++)
-                {
-                    cout << ", " << clusterAssignment[0].cluster.students[i].id;
-                }
-                cout << " ] assigned to class ";
-                if (classIds.size() == 0)
-                {
-                    cout << "none? \n";
-                }
-                else
-                {
-                    cout << classIds[0];
-                    for (int i = 1; i < classIds.size(); i++)
-                    {
-                        cout << ", " << classIds[i];
-                    }
-                    cout << "\n";
-                }
-            }
+            logClassAssignments(solver, classes, classVec, t, r);
+            logStudentSectioningAssignments(solver, sectioningData);
             uint64_t penalty = ipamir_val_obj(solver);
             cout << "Penalty incurred by the solution: " << penalty << "\n";
         }
