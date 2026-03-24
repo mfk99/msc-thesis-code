@@ -498,13 +498,13 @@ void encodeConflictingSchedules(void *solver,
     }
 }
 
-vector<vector<DecisionVar>> encodeStudentSectioning(void *solver,
-                                                    uint32_t literalCounter,
-                                                    int weeks,
-                                                    int days,
-                                                    vector<vector<int>> t,
-                                                    map<string, Class> classMap,
-                                                    map<string, int> classIndexMap)
+StudentSectioningData encodeStudentSectioning(void *solver,
+                                              uint32_t literalCounter,
+                                              int weeks,
+                                              int days,
+                                              vector<vector<int>> t,
+                                              map<string, Class> classMap,
+                                              map<string, int> classIndexMap)
 {
 
     vector<Student> students = getStudents();
@@ -525,5 +525,9 @@ vector<vector<DecisionVar>> encodeStudentSectioning(void *solver,
     encodeExactlyOneClassPerSubpartConstraint(solver, hierarchyVec, studentClusters, s, classToDecisionVars, confLiteralMap);
     encodeConflictingSchedules(solver, literalCounter, weeks, days, t, classMap, classIndexMap, hierarchyVec, studentClusters, s, classToDecisionVars, confLiteralMap);
 
-    return s;
+    StudentSectioningData data;
+    data.s = s;
+    data.conf = conf;
+
+    return data;
 }

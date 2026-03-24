@@ -105,7 +105,9 @@ void runBenchMark()
     logTimingLiterals(t);
     logRoomLiterals(r);
 
-    vector<vector<DecisionVar>> s = encodeStudentSectioning(solver, literalCounter, weeks, days, t, classMap, classIndexMap);
+    StudentSectioningData sectioningData = encodeStudentSectioning(solver, literalCounter, weeks, days, t, classMap, classIndexMap);
+    vector<vector<DecisionVar>> s = sectioningData.s;
+    vector<ConfDecisionVar> conf = sectioningData.conf;
 
     encodeConstraints(solver,
                       literalCounter,
@@ -181,13 +183,23 @@ void runBenchMark()
                      << " slot(s) to room " << roomId << "\n";
             }
 
-            // TODO: Fix cluster assignment printing
+            for (ConfDecisionVar clusterConfigAssignment : conf)
+            {
+                if (0 < ipamir_val_lit(solver, clusterConfigAssignment.literal))
+                {
+                    cout << "Cluster "
+                         << clusterConfigAssignment.clusterId
+                         << " assigned to config "
+                         << clusterConfigAssignment.configId
+                         << "\n";
+                }
+            }
             for (vector<DecisionVar> clusterAssignment : s)
             {
                 vector<string> classIds;
                 for (DecisionVar var : clusterAssignment)
                 {
-                    if (ipamir_val_lit(solver, var.literal))
+                    if (0 < ipamir_val_lit(solver, var.literal))
                     {
                         classIds.push_back(var.classId);
                     }

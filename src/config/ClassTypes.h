@@ -90,3 +90,9 @@ struct ConfDecisionVar
     int clusterId;
     string configId;
 };
+
+struct StudentSectioningData
+{
+    vector<vector<DecisionVar>> s;
+    vector<ConfDecisionVar> conf;
+};
