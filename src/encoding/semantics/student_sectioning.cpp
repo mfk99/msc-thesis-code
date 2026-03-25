@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <unordered_map>
 #include "distribution_encodings.h"
-#include "../logging/logging.h"
-#include "../input_parser/input_parser.h"
-#include "../config/config.h"
-#include "../../libs/ipamir/ipamir.h"
+#include "../../utils/logging/logging.h"
+#include "../../utils/input_parser/input_parser.h"
+#include "../../utils/config/config.h"
+#include "../../../libs/ipamir/ipamir.h"
 #include "../am1/am1_encoder.h"
 #include "../ipamir_utils/ipamir_clause_collector.h"
 

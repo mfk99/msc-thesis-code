@@ -1,7 +1,7 @@
-#include "../input_parser/input_parser.h"
-#include "../logging/logging.h"
-#include "../../libs/ipamir/ipamir.h"
-#include "../../libs/rustsat/capi/rustsat.h"
+#include "../../utils/input_parser/input_parser.h"
+#include "../../utils/logging/logging.h"
+#include "../../../libs/ipamir/ipamir.h"
+#include "../../../libs/rustsat/capi/rustsat.h"
 #include "scheduling_encoding_generator.h"
 #include <iostream>
 #include <string>

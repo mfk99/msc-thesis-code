@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "../../libs/rustsat/capi/rustsat.h"
+#include "../../../libs/rustsat/capi/rustsat.h"
 
 using namespace std;
 using namespace RustSAT;

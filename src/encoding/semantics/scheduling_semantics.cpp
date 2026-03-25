@@ -5,11 +5,12 @@
 #include <string>
 #include <chrono>
 #include "distribution_encodings.h"
-#include "../logging/logging.h"
-#include "../input_parser/input_parser.h"
-#include "../config/config.h"
-#include "../../libs/ipamir/ipamir.h"
+#include "../../utils/logging/logging.h"
+#include "../../utils/input_parser/input_parser.h"
+#include "../../utils/config/config.h"
+#include "../../../libs/ipamir/ipamir.h"
 #include "student_sectioning.h"
+#include "../../../libs/pugixml/src/pugixml.hpp"
 
 using namespace std;
 
@@ -133,6 +134,19 @@ vector<int> parseUserClauseInput(string input)
     return clauseLiterals;
 }
 
+void writeResultsToFile(vector<long long> results)
+{
+    pugi::xml_document doc;
+    pugi::xml_node dataNode = doc.append_child("data");
+    for (size_t i = 0; i < results.size(); i++)
+    {
+        pugi::xml_node entryNode = dataNode.append_child("entry");
+        entryNode.append_attribute("iteration") = to_string(i);
+        entryNode.append_attribute("duration(µs)") = to_string(results[i]);
+    }
+    doc.save_file("save_file_output.xml");
+}
+
 void runBenchMark()
 {
 
@@ -225,6 +239,7 @@ void runBenchMark()
                       distributionsMap);
 
     // Print answer and ask user for input
+    vector<long long> results;
     while (true)
     {
         // TODO: Write encoding to file based on generate-variable
@@ -232,6 +247,7 @@ void runBenchMark()
         int code = ipamir_solve(solver);
         std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
         long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+        results.push_back(timeDiff);
         cout << "Solving took:" << timeDiff << "[µs], " << timeDiff / 1000000.0 << "[s] \n";
         cout << "Code returned by ipamir: " << code << "\n";
         if (code == 30)
@@ -254,6 +270,7 @@ void runBenchMark()
             ipamir_add_hard(solver, lit);
         }
     }
+    writeResultsToFile(results);
     cout << "Releasing ipamir...\n";
     ipamir_release(solver);
     cout << "Exiting...\n";

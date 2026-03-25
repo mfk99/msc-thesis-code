@@ -1,19 +1,10 @@
 TARGET = output
 OBJ_DIR = build
 
-SRCS = \
- src/index.cpp \
- src/semantics/scheduling_semantics.cpp \
- src/semantics/student_sectioning.cpp \
- src/semantics/distribution_encodings.cpp \
- src/input_parser/input_parser.cpp \
- src/scheduling_encoding_generator/scheduling_encoding_generator.cpp \
- src/config/config.cpp \
- src/am1/am1_encoder.cpp \
- src/ipamir_utils/ipamir_clause_builder.cpp \
- src/ipamir_utils/ipamir_clause_collector.cpp \
- src/logging/logging.cpp \
- libs/pugixml/src/pugixml.cpp
+SRCS := $(wildcard src/*.cpp) \
+		$(wildcard src/*/*.cpp) \
+		$(wildcard src/*/*/*.cpp) \
+ 		libs/pugixml/src/pugixml.cpp
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 CXX = g++

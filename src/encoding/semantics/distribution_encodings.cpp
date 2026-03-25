@@ -7,12 +7,12 @@
 #include <functional>
 #include <algorithm>
 #include <set>
-#include "../logging/logging.h"
-#include "../input_parser/input_parser.h"
-#include "../config/config.h"
+#include "../../utils/logging/logging.h"
+#include "../../utils/input_parser/input_parser.h"
+#include "../../utils/config/config.h"
 #include "../am1/am1_encoder.h"
-#include "../../libs/ipamir/ipamir.h"
-#include "../../libs/rustsat/capi/rustsat.h"
+#include "../../../libs/ipamir/ipamir.h"
+#include "../../../libs/rustsat/capi/rustsat.h"
 #include "../ipamir_utils/ipamir_clause_builder.h"
 #include "../ipamir_utils/ipamir_clause_collector.h"
 

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
-#include "../input_parser/input_parser.h"
-#include "../logging/logging.h"
-#include "../../libs/ipamir/ipamir.h"
+#include "../../utils/input_parser/input_parser.h"
+#include "../../utils/logging/logging.h"
+#include "../../..//libs/ipamir/ipamir.h"
 
 void ipamirAddSoftClause(void *solver, std::vector<int> clause, uint32_t &literalCount, int penalty)
 {
