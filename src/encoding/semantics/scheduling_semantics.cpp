@@ -8,9 +8,9 @@
 #include "../../utils/logging/logging.h"
 #include "../../utils/input_parser/input_parser.h"
 #include "../../utils/config/config.h"
+#include "../../utils/file_writer/file_writer.h"
 #include "../../../libs/ipamir/ipamir.h"
 #include "student_sectioning.h"
-#include "../../../libs/pugixml/src/pugixml.hpp"
 
 using namespace std;
 
@@ -132,19 +132,6 @@ vector<int> parseUserClauseInput(string input)
     }
     clauseLiterals.push_back(stoi(input));
     return clauseLiterals;
-}
-
-void writeResultsToFile(vector<long long> results)
-{
-    pugi::xml_document doc;
-    pugi::xml_node dataNode = doc.append_child("data");
-    for (size_t i = 0; i < results.size(); i++)
-    {
-        pugi::xml_node entryNode = dataNode.append_child("entry");
-        entryNode.append_attribute("iteration") = to_string(i);
-        entryNode.append_attribute("duration(µs)") = to_string(results[i]);
-    }
-    doc.save_file("save_file_output.xml");
 }
 
 void runBenchMark()
