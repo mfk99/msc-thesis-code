@@ -7,3 +7,6 @@
 [submodule "libs/ipamir"]
 	path = libs/ipamir
 	url = https://bitbucket.org/coreo-group/ipamir/src/master/
+[submodule "libs/cxxopts"]
+	path = libs/cxxopts
+	url = https://github.com/jarro2783/cxxopts
