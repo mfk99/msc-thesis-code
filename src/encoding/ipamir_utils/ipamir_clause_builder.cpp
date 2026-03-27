@@ -18,18 +18,18 @@ void ipamirAddSoftClause(void *solver, std::vector<int> clause, uint32_t &litera
     int softLit = literalCount;
     literalCount += 1;
     ipamir_add_soft_lit(solver, softLit, penalty);
-    if (verbose)
+    if (opts.verbose)
         std::cout << "[VERBOSE] Adding soft literal " << softLit << " with weight " << penalty << " and clause ";
 
     for (int literal : clause)
     {
         ipamir_add_hard(solver, literal);
-        if (verbose)
+        if (opts.verbose)
             std::cout << literal << ", ";
     }
     ipamir_add_hard(solver, softLit);
     ipamir_add_hard(solver, 0);
-    if (verbose)
+    if (opts.verbose)
         std::cout << softLit << ", 0\n";
 }
 

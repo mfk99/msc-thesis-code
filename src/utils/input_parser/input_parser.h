@@ -2,12 +2,18 @@
 #include <vector>
 #include <string>
 
-extern unsigned short verbose;
-extern unsigned short initialize;
-extern unsigned short generate;
-extern unsigned short execute;
-extern std::string filePath;
+struct Options
+{
+    bool verbose = false;
+    bool initialize = false;
+    bool generate = false;
+    bool execute = false;
+    bool manual_input = false;
+    int iterations;
+    std::vector<int> generationVariables;
+    std::string filePath;
+};
+
+extern Options opts;
 
 void parseInput(int argc, char **argv);
-void printHelp();
-std::vector<int> parseEncodingGenerationVariables(int argc, char **argv);

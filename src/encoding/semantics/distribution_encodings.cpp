@@ -53,17 +53,17 @@ void encodeAM1Timing(void *solver,
 {
     for (long long i = 0; i < classes; i++)
     {
-        if (verbose)
+        if (opts.verbose)
             cout << "[VERBOSE] Adding am1 period constraints for literals [";
         AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
         for (int lit : t[i])
         {
-            if (verbose)
+            if (opts.verbose)
                 cout << lit << ",";
             am1Encoder.am1encoder_add(lit);
         }
         am1Encoder.am1encoder_encode(&literalCounter, ipamirClauseCollector, solver);
-        if (verbose)
+        if (opts.verbose)
             cout << "0] \n";
         am1Encoder.am1encoder_drop();
     }
@@ -79,22 +79,22 @@ void encodeAM1Room(void *solver,
     {
         if (r[i].size() == 0)
         {
-            if (verbose)
+            if (opts.verbose)
                 cout << "[VERBOSE] No rooms defined for class n." << i << ", skipping am1 encoding\n";
             continue;
         }
 
-        if (verbose)
+        if (opts.verbose)
             cout << "[VERBOSE] Adding am1 room constraints for literals [";
         AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
         for (int lit : r[i])
         {
-            if (verbose)
+            if (opts.verbose)
                 cout << lit << ",";
             am1Encoder.am1encoder_add(lit);
         }
         am1Encoder.am1encoder_encode(&literalCounter, ipamirClauseCollector, solver);
-        if (verbose)
+        if (opts.verbose)
             cout << "0] \n";
         am1Encoder.~AM1Encoder();
     }
@@ -1673,7 +1673,7 @@ void encodeViolatingBlocks(
             if (encodedClauses.insert(clause).second)
             {
                 ipamirAddClause(solver, clause, literalCounter, required, penalty);
-                if (verbose)
+                if (opts.verbose)
                 {
                     cout << "[VERBOSE] Found MaxBlock violation: [ ";
                     for (int l : auxLiterals)

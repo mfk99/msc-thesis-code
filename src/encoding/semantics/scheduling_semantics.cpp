@@ -134,6 +134,37 @@ vector<int> parseUserClauseInput(string input)
     return clauseLiterals;
 }
 
+void penalizeSolution(void *solver, int iteration, vector<vector<int>> t, vector<vector<int>> r)
+{
+    int weight = iteration + 1;
+
+    for (vector<int> classTimingLiterals : t)
+    {
+        for (int timingLiteral : classTimingLiterals)
+        {
+            if (ipamir_val_lit(solver, timingLiteral))
+            {
+                ipamir_add_soft_lit(solver, timingLiteral, weight);
+                verboseLog("Penalizing timing lit " + to_string(timingLiteral) + " with weight " + to_string(weight));
+                break;
+            }
+        }
+    }
+
+    for (vector<int> classRoomLiterals : r)
+    {
+        for (int roomLiteral : classRoomLiterals)
+        {
+            if (ipamir_val_lit(solver, roomLiteral))
+            {
+                ipamir_add_soft_lit(solver, roomLiteral, weight);
+                verboseLog("Penalizing room lit " + to_string(roomLiteral) + " with weight " + to_string(weight));
+                break;
+            }
+        }
+    }
+}
+
 void runBenchMark()
 {
 
@@ -174,27 +205,27 @@ void runBenchMark()
     {
         // Initilaize t
         vector<int> timingLiterals;
-        if (verbose)
+        if (opts.verbose)
             cout << "[VERBOSE] Created timing assignment literals " << literalCounter;
         for ([[maybe_unused]] Timing timing : classObj.timings)
         {
             timingLiterals.push_back(literalCounter);
             literalCounter++;
         }
-        if (verbose)
+        if (opts.verbose)
             cout << " - " << literalCounter - 1 << " for course " << classId << "\n";
         t.push_back(timingLiterals);
 
         // Initilaize r
         vector<int> roomLiterals;
-        if (verbose)
+        if (opts.verbose)
             cout << "[VERBOSE] Created room assignment literals " << literalCounter;
         for ([[maybe_unused]] Room room : classObj.rooms)
         {
             roomLiterals.push_back(literalCounter);
             literalCounter++;
         }
-        if (verbose)
+        if (opts.verbose)
             cout << " - " << literalCounter - 1 << " for course " << classId << "\n";
         r.push_back(roomLiterals);
     }
@@ -227,7 +258,25 @@ void runBenchMark()
 
     // Print answer and ask user for input
     vector<long long> results;
-    while (true)
+    int iterations = opts.iterations;
+    if (opts.manual_input)
+    {
+        while (true)
+        {
+            cout << "Insert a new clause or give an empty input to execute benchmark \n";
+            string input;
+            std::getline(cin, input);
+            if (input.size() == 0)
+                break;
+            vector<int> clauseLiterals = parseUserClauseInput(input);
+            for (int lit : clauseLiterals)
+            {
+                verboseLog("Adding literal " + to_string(lit));
+                ipamir_add_hard(solver, lit);
+            }
+        }
+    }
+    for (int i = 0; i < iterations; i++)
     {
         // TODO: Write encoding to file based on generate-variable
         std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
@@ -244,18 +293,7 @@ void runBenchMark()
             uint64_t penalty = ipamir_val_obj(solver);
             cout << "Penalty incurred by the solution: " << penalty << "\n";
         }
-
-        cout << "Insert a new clause or give an empty input to exit\n";
-        string input;
-        std::getline(cin, input);
-        if (input.size() == 0)
-            break;
-        vector<int> clauseLiterals = parseUserClauseInput(input);
-        for (int lit : clauseLiterals)
-        {
-            verboseLog("Adding literal " + to_string(lit));
-            ipamir_add_hard(solver, lit);
-        }
+        penalizeSolution(solver, i, t, r);
     }
     writeResultsToFile(results);
     cout << "Releasing ipamir...\n";

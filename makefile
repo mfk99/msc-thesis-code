@@ -10,6 +10,7 @@ OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 CXX = g++
 CXXFLAGS ?= -Wall -DNDEBUG -O3 -std=c++17
 CXXFLAGS += -I/usr/include
+CXXFLAGS += -Ilibs/cxxopts/include
 
 IPAMIRSOLVER ?= solver2022
 IPASIRSOLVER ?= minisat220

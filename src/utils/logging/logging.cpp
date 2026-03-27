@@ -7,13 +7,13 @@ using namespace std;
 
 void verboseLog(string log)
 {
-    if (verbose)
+    if (opts.verbose)
         cout << "[VERBOSE] " << log << "\n";
 }
 
 void logTimingLiterals(vector<vector<int>> t)
 {
-    if (!verbose)
+    if (!opts.verbose)
         return;
     verboseLog("timing literals: ");
     for (vector<int> classPeriods : t)
@@ -28,7 +28,7 @@ void logTimingLiterals(vector<vector<int>> t)
 
 void logRoomLiterals(vector<vector<int>> r)
 {
-    if (!verbose)
+    if (!opts.verbose)
         return;
     verboseLog("room literals: ");
     for (vector<int> classRooms : r)

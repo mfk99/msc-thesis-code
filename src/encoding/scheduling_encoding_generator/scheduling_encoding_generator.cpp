@@ -132,7 +132,7 @@ void generateEncoding(vector<int> generationVariables)
     clauseCount += (long long)mustHaveRoomClauses.size();
     clauseCount += (long long)atMostOneClauses.size();
     clauseCount += (long long)roomConflictClauses.size();
-    if (verbose)
+    if (opts.verbose)
         printEncoding(vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses);
     writeEncodingToFile(encodingFilePath, vars, clauseCount, mustHaveRoomClauses, atMostOneClauses, roomConflictClauses, generationVariables);
 }
@@ -246,7 +246,7 @@ void writeEncodingToFile(string encodingFilePath, long long vars, long long clau
 
 string getFilePath()
 {
-    if (filePath == "")
+    if (opts.filePath == "")
     {
         namespace fs = std::filesystem;
         string directoryPath = "./encodings";
@@ -262,7 +262,7 @@ string getFilePath()
         timeStampString.erase(std::remove_if(timeStampString.begin(), timeStampString.end(), ::isspace), timeStampString.end());
         std::replace(timeStampString.begin(), timeStampString.end(), ':', '-');
         string encodingFilePath = directoryPath + "/" + timeStampString + "-timetableEncoding.cnf";
-        filePath = encodingFilePath;
+        opts.filePath = encodingFilePath;
     }
-    return filePath;
+    return opts.filePath;
 }

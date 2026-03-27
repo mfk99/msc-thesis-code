@@ -34,9 +34,9 @@ vector<StudentCluster> createStudentClusters(vector<Student> students, vector<Hi
     {
         cluster.id = idCounter++;
         studentClusters.push_back(cluster);
-        if (verbose)
+        if (opts.verbose)
         {
-            cout << "[VERBOSE] Cluster id " << idCounter - 1 << " contains [ ";
+            cout << "[opts.verbose] Cluster id " << idCounter - 1 << " contains [ ";
             for (Student student : cluster.students)
             {
                 cout << student.id << ", ";
@@ -160,32 +160,32 @@ void encodeExactlyOneConfig(void *solver,
     for (StudentCluster cluster : studentClusters)
     {
         vector<ConfDecisionVar> confVars = confLiteralMap[cluster.id];
-        if (verbose)
-            cout << "[VERBOSE] Encoding at-least-1 config constraint with literals [";
+        if (opts.verbose)
+            cout << "[opts.verbose] Encoding at-least-1 config constraint with literals [";
 
         for (ConfDecisionVar var : confVars)
         {
             int lit = var.literal;
-            if (verbose)
+            if (opts.verbose)
                 cout << lit << ",";
             ipamir_add_hard(solver, lit);
         }
         ipamir_add_hard(solver, 0);
-        if (verbose)
+        if (opts.verbose)
             cout << "0] \n";
 
-        if (verbose)
-            cout << "[VERBOSE] Adding am1 config constraints for literals [";
+        if (opts.verbose)
+            cout << "[opts.verbose] Adding am1 config constraints for literals [";
         AM1Encoder am1Encoder = AM1Encoder("pairwise");
         for (ConfDecisionVar var : confVars)
         {
             int lit = var.literal;
-            if (verbose)
+            if (opts.verbose)
                 cout << lit << ",";
             am1Encoder.am1encoder_add(lit);
         }
         am1Encoder.am1encoder_encode(&literalCounter, ipamirClauseCollector, solver);
-        if (verbose)
+        if (opts.verbose)
             cout << "0] \n";
         am1Encoder.am1encoder_drop();
     }
@@ -381,16 +381,16 @@ void encodeExactlyOneClassPerSubpartConstraint(void *solver,
                         }
                     }
                     ipamir_add_hard(solver, -configLit);
-                    if (verbose)
-                        cout << "[VERBOSE] Added at-least-one class assignment per config constraint: [ " << -configLit;
+                    if (opts.verbose)
+                        cout << "[opts.verbose] Added at-least-one class assignment per config constraint: [ " << -configLit;
                     for (int lit : literals)
                     {
                         ipamir_add_hard(solver, lit);
-                        if (verbose)
+                        if (opts.verbose)
                             cout << ", " << lit;
                     }
                     ipamir_add_hard(solver, 0);
-                    if (verbose)
+                    if (opts.verbose)
                         cout << ", 0 ] \n";
                 }
             }

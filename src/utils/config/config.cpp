@@ -19,8 +19,8 @@ More info available at: https://www.itc2019.org/format
 
 xml_document openXmlFile()
 {
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
+    char *filePathChar = new char[opts.filePath.length() + 1];
+    strcpy(filePathChar, opts.filePath.c_str());
     xml_document doc;
     xml_parse_result result = doc.load_file(filePathChar);
 
@@ -33,7 +33,7 @@ xml_document openXmlFile()
     }
     else
     {
-        if (verbose)
+        if (opts.verbose)
             cout << "[VERBOSE] File loaded successfully \n";
         return doc;
     }
@@ -51,7 +51,7 @@ void generateConfig(vector<int> configVariables)
     xml_document doc;
     // add node with some name
     xml_node root = doc.append_child("problem");
-    root.append_attribute("name") = filePath;
+    root.append_attribute("name") = opts.filePath;
     root.append_attribute("nrDays") = days;
     root.append_attribute("nrWeeks") = weeks;
     root.append_attribute("slotsPerDay") = hours;
@@ -200,8 +200,8 @@ void generateConfig(vector<int> configVariables)
         }
     }
 
-    char *filePathChar = new char[filePath.length() + 1];
-    strcpy(filePathChar, filePath.c_str());
+    char *filePathChar = new char[opts.filePath.length() + 1];
+    strcpy(filePathChar, opts.filePath.c_str());
     doc.save_file(filePathChar);
 }
 
