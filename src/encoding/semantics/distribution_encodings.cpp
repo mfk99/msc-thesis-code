@@ -140,67 +140,88 @@ void encodeRoomConflictConstraints(void *solver,
                                    int classes,
                                    int weeks,
                                    int days,
-                                   vector<vector<int>> t,
-                                   vector<vector<int>> r,
-                                   vector<Class> classVec)
+                                   vector<vector<int>> *t,
+                                   vector<vector<int>> *r,
+                                   vector<Class> *classVec)
 {
-    for (long long class1Index = 0; class1Index < classes; class1Index++)
+    unordered_map<string, vector<pair<int, int>>> roomMap;
+    for (int classIndex = 0; classIndex < classes; classIndex++)
     {
-        Class class1 = classVec[class1Index];
-        for (long long class2Index = class1Index + 1; class2Index < classes; class2Index++)
+        const Class &c = (*classVec)[classIndex];
+        for (int roomIndex = 0; roomIndex < c.rooms.size(); roomIndex++)
         {
-            Class class2 = classVec[class2Index];
-            for (long unsigned int class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
+            string roomId = c.rooms[roomIndex].id;
+            roomMap[roomId].push_back({classIndex, roomIndex});
+        }
+    }
+
+    for (auto &[roomId, vec] : roomMap)
+    {
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            for (size_t j = i + 1; j < vec.size(); j++)
             {
-                Room room1 = class1.rooms[class1RoomIndex];
-                for (long unsigned int class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
+
+                int c1 = vec[i].first;
+                int r1 = vec[i].second;
+
+                int c2 = vec[j].first;
+                int r2 = vec[j].second;
+
+                const Class &class1 = (*classVec)[c1];
+                const Class &class2 = (*classVec)[c2];
+
+                for (int t1 = 0; t1 < class1.timings.size(); t1++)
                 {
-                    Room room2 = class2.rooms[class2RoomIndex];
-                    if (room1.id != room2.id)
-                        continue;
-
-                    for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
+                    for (int t2 = 0; t2 < class2.timings.size(); t2++)
                     {
-                        Timing timing1 = class1.timings[class1TimingIndex];
-                        for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
+                        const Timing &timing1 = class1.timings[t1];
+                        const Timing &timing2 = class2.timings[t2];
+                        const string &timing1Weeks = timing1.weeks;
+                        const string &timing2Weeks = timing2.weeks;
+                        const string &timing1Days = timing1.days;
+                        const string &timing2Days = timing2.days;
+
+                        int timing1EndSlot = timing1.start + timing1.length;
+                        int timing2EndSlot = timing2.start + timing2.length;
+
+                        bool overLap = (timing1.start < timing2EndSlot && timing1.start >= timing2.start) ||
+                                       (timing2.start < timing1EndSlot && timing2.start >= timing1.start);
+
+                        if (!overLap)
+                            continue;
+
+                        bool weeksOverlap = false;
+                        for (int i = 0; i < weeks; i++)
                         {
-                            Timing timing2 = class2.timings[class2TimingIndex];
-                            string timing1Weeks = timing1.weeks;
-                            string timing2Weeks = timing2.weeks;
-                            string timing1Days = timing1.days;
-                            string timing2Days = timing2.days;
-                            bool overlapConstraintEncoded = false;
-                            for (int weekIndex = 0; weekIndex < weeks && !overlapConstraintEncoded; weekIndex++)
+                            if (timing1Weeks[i] == '1' && timing2Weeks[i] == '1')
                             {
-                                if (timing1Weeks[weekIndex] == '0' || timing2Weeks[weekIndex] == '0')
-                                    continue;
-
-                                for (int dayIndex = 0; dayIndex < days && !overlapConstraintEncoded; dayIndex++)
-                                {
-                                    if (timing1Days[dayIndex] == '0' || timing2Days[dayIndex] == '0')
-                                        continue;
-
-                                    int timing1EndSlot = timing1.start + timing1.length;
-                                    int timing2EndSlot = timing2.start + timing2.length;
-                                    bool overLap = (timing1.start < timing2EndSlot && timing1.start >= timing2.start) ||
-                                                   (timing2.start < timing1EndSlot && timing2.start >= timing1.start);
-                                    if (overLap)
-                                    {
-                                        ipamir_add_hard(solver, -t[class1Index][class1TimingIndex]);
-                                        ipamir_add_hard(solver, -t[class2Index][class2TimingIndex]);
-                                        ipamir_add_hard(solver, -r[class1Index][class1RoomIndex]);
-                                        ipamir_add_hard(solver, -r[class2Index][class2RoomIndex]);
-                                        ipamir_add_hard(solver, 0);
-                                        verboseLog("Adding RoomConflict constraint: " +
-                                                   to_string(-t[class1Index][class1TimingIndex]) + ", " +
-                                                   to_string(-t[class2Index][class2TimingIndex]) + ", " +
-                                                   to_string(-r[class1Index][class1RoomIndex]) + ", " +
-                                                   to_string(-r[class2Index][class2RoomIndex]) + ", 0");
-                                        overlapConstraintEncoded = true;
-                                    }
-                                }
+                                weeksOverlap = true;
+                                break;
                             }
                         }
+
+                        if (!weeksOverlap)
+                            continue;
+
+                        bool daysOverlap = false;
+                        for (int i = 0; i < days; i++)
+                        {
+                            if (timing1Days[i] == '1' && timing2Days[i] == '1')
+                            {
+                                daysOverlap = true;
+                                break;
+                            }
+                        }
+
+                        if (!daysOverlap)
+                            continue;
+
+                        ipamir_add_hard(solver, -(*t)[c1][t1]);
+                        ipamir_add_hard(solver, -(*t)[c2][t2]);
+                        ipamir_add_hard(solver, -(*r)[c1][r1]);
+                        ipamir_add_hard(solver, -(*r)[c2][r2]);
+                        ipamir_add_hard(solver, 0);
                     }
                 }
             }
@@ -1834,32 +1855,83 @@ void encodeConstraints(void *solver,
                        map<string, int> classIndexMap,
                        map<string, vector<DistributionVariant>> distributionsMap)
 {
+
+    cout << "Running encodeAtLeast1Timing..." << endl;
     encodeAtLeast1Timing(solver, classes, t);
+    cout << "Finished encodeAtLeast1Timing" << endl;
+    cout << "Running encodeAtLeast1Room..." << endl;
     encodeAtLeast1Room(solver, classes, r);
+    cout << "Finished encodeAtLeast1Room" << endl;
+    cout << "Running encodeAM1Timing..." << endl;
     encodeAM1Timing(solver, literalCounter, classes, t);
+    cout << "Finished encodeAM1Timing" << endl;
+    cout << "Running encodeAM1Room..." << endl;
     encodeAM1Room(solver, literalCounter, classes, r);
+    cout << "Finished encodeAM1Room" << endl;
+    cout << "Running encodeAssignmentPenalties..." << endl;
     encodeAssignmentPenalties(solver, classes, t, r, classVec);
-
-    encodeRoomConflictConstraints(solver, classes, weeks, days, t, r, classVec);
+    cout << "Finished encodeAssignmentPenalties" << endl;
+    cout << "Running encodeRoomConflictConstraints..." << endl;
+    encodeRoomConflictConstraints(solver, classes, weeks, days, &t, &r, &classVec);
+    cout << "Finished encodeRoomConflictConstraints" << endl;
+    cout << "Running encodeRoomUnavailabilityConstraints..." << endl;
     encodeRoomUnavailabilityConstraints(solver, weeks, days, t, r, classVec);
-
+    cout << "Finished encodeRoomUnavailabilityConstraints" << endl;
+    cout << "Running encodeSameStartConstraint..." << endl;
     encodeSameStartConstraint(solver, literalCounter, t, classMap, distributionsMap["SameStart"]);
+    cout << "Finished encodeSameStartConstraint" << endl;
+    cout << "Running encodeSameTimeConstraint..." << endl;
     encodeSameTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, distributionsMap["SameTime"]);
+    cout << "Finished encodeSameTimeConstraint" << endl;
+    cout << "Running encodeDifferentTimeConstraint..." << endl;
     encodeDifferentTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, distributionsMap["DifferentTime"]);
+    cout << "Finished encodeDifferentTimeConstraint" << endl;
+    cout << "Running encodeSameDaysConstraint..." << endl;
     encodeSameDaysConstraint(solver, literalCounter, days, t, classMap, classIndexMap, distributionsMap["SameDays"]);
+    cout << "Finished encodeSameDaysConstraint" << endl;
+    cout << "Running encodeDifferentDaysConstraint..." << endl;
     encodeDifferentDaysConstraint(solver, literalCounter, days, t, classMap, classIndexMap, distributionsMap["DifferentDays"]);
+    cout << "Finished encodeDifferentDaysConstraint" << endl;
+    cout << "Running encodeSameWeeksConstraints..." << endl;
     encodeSameWeeksConstraints(solver, literalCounter, weeks, t, classMap, classIndexMap, distributionsMap["SameWeeks"]);
+    cout << "Finished encodeSameWeeksConstraints" << endl;
+    cout << "Running encodeDifferentWeeksConstraints..." << endl;
     encodeDifferentWeeksConstraints(solver, literalCounter, weeks, t, classMap, classIndexMap, distributionsMap["DifferentWeeks"]);
+    cout << "Finished encodeDifferentWeeksConstraints" << endl;
+    cout << "Running encodeSameRoomConstraints..." << endl;
     encodeSameRoomConstraints(solver, literalCounter, r, classMap, classIndexMap, distributionsMap["SameRoom"]);
+    cout << "Finished encodeSameRoomConstraints" << endl;
+    cout << "Running encodeDifferentRoomConstraints..." << endl;
     encodeDifferentRoomConstraints(solver, literalCounter, r, classMap, classIndexMap, distributionsMap["DifferentRoom"]);
+    cout << "Finished encodeDifferentRoomConstraints" << endl;
+    cout << "Running encodeOverLapConstraints..." << endl;
     encodeOverLapConstraints(solver, literalCounter, weeks, days, t, r, classMap, classIndexMap, distributionsMap["OverLap"]);
+    cout << "Finished encodeOverLapConstraints" << endl;
+    cout << "Running encodeNotOverLapConstraints..." << endl;
     encodeNotOverLapConstraints(solver, literalCounter, weeks, days, t, r, classMap, classIndexMap, distributionsMap["NotOverLap"]);
+    cout << "Finished encodeNotOverLapConstraints" << endl;
+    cout << "Running encodeSameAttendeesConstraints..." << endl;
     encodeSameAttendeesConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["SameAttendees"]);
+    cout << "Finished encodeSameAttendeesConstraints" << endl;
+    cout << "Running encodeWorkDayConstraints..." << endl;
     encodeWorkDayConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["WorkDay"]);
+    cout << "Finished encodeWorkDayConstraints" << endl;
+    cout << "Running encodePrecedenceConstraints..." << endl;
     encodePrecedenceConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["Precedence"]);
+    cout << "Finished encodePrecedenceConstraints" << endl;
+    cout << "Running encodeMinGapConstraints..." << endl;
     encodeMinGapConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MinGap"]);
+    cout << "Finished encodeMinGapConstraints" << endl;
+    cout << "Running encodeMaxDaysConstraints..." << endl;
     encodeMaxDaysConstraints(solver, literalCounter, weeks, days, t, classVec, classMap, classIndexMap, distributionsMap["MaxDays"]);
+    cout << "Finished encodeMaxDaysConstraints" << endl;
+    cout << "Running encodeMaxDayLoadConstraints..." << endl;
     encodeMaxDayLoadConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxDayLoad"]);
+    cout << "Finished encodeMaxDayLoadConstraints" << endl;
+    cout << "Running encodeMaxBreaksConstraints..." << endl;
     encodeMaxBreaksConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBreaks"]);
+    cout << "Finished encodeMaxBreaksConstraints" << endl;
+    cout << "Running encodeMaxBlockConstraints..." << endl;
     encodeMaxBlockConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBlock"]);
+    cout << "Finished encodeMaxBlockConstraints" << endl;
 }
