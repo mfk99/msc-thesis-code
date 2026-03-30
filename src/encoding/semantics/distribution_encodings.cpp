@@ -19,11 +19,11 @@
 using namespace std;
 using namespace RustSAT;
 
-void encodeAtLeast1Timing(void *solver, int classes, vector<vector<int>> t)
+void encodeAtLeast1Timing(void *solver, int classes, vector<vector<int>> *t)
 {
     for (long long i = 0; i < classes; i++)
     {
-        for (int lit : t[i])
+        for (int lit : (*t)[i])
         {
             ipamir_add_hard(solver, lit);
         }
@@ -31,13 +31,13 @@ void encodeAtLeast1Timing(void *solver, int classes, vector<vector<int>> t)
     }
 };
 
-void encodeAtLeast1Room(void *solver, int classes, vector<vector<int>> r)
+void encodeAtLeast1Room(void *solver, int classes, vector<vector<int>> *r)
 {
     for (long long i = 0; i < classes; i++)
     {
-        if (r[i].size() == 0)
+        if ((*r)[i].size() == 0)
             continue;
-        for (int lit : r[i])
+        for (int lit : (*r)[i])
         {
             ipamir_add_hard(solver, lit);
         }
@@ -48,7 +48,7 @@ void encodeAtLeast1Room(void *solver, int classes, vector<vector<int>> r)
 void encodeAM1Timing(void *solver,
                      uint32_t literalCounter,
                      int classes,
-                     vector<vector<int>> t,
+                     vector<vector<int>> *t,
                      string am1EncoderType = "pairwise")
 {
     for (long long i = 0; i < classes; i++)
@@ -56,7 +56,7 @@ void encodeAM1Timing(void *solver,
         if (opts.verbose)
             cout << "[VERBOSE] Adding am1 period constraints for literals [";
         AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
-        for (int lit : t[i])
+        for (int lit : (*t)[i])
         {
             if (opts.verbose)
                 cout << lit << ",";
@@ -72,12 +72,12 @@ void encodeAM1Timing(void *solver,
 void encodeAM1Room(void *solver,
                    uint32_t literalCounter,
                    int classes,
-                   vector<vector<int>> r,
+                   vector<vector<int>> *r,
                    string am1EncoderType = "pairwise")
 {
     for (long long i = 0; i < classes; i++)
     {
-        if (r[i].size() == 0)
+        if ((*r)[i].size() == 0)
         {
             if (opts.verbose)
                 cout << "[VERBOSE] No rooms defined for class n." << i << ", skipping am1 encoding\n";
@@ -87,7 +87,7 @@ void encodeAM1Room(void *solver,
         if (opts.verbose)
             cout << "[VERBOSE] Adding am1 room constraints for literals [";
         AM1Encoder am1Encoder = AM1Encoder(am1EncoderType);
-        for (int lit : r[i])
+        for (int lit : (*r)[i])
         {
             if (opts.verbose)
                 cout << lit << ",";
@@ -102,21 +102,21 @@ void encodeAM1Room(void *solver,
 
 void encodeAssignmentPenalties(void *solver,
                                int classes,
-                               vector<vector<int>> t,
-                               vector<vector<int>> r,
-                               vector<Class> classVec)
+                               vector<vector<int>> *t,
+                               vector<vector<int>> *r,
+                               vector<Class> *classVec)
 {
     for (long long classIndex = 0; classIndex < classes; classIndex++)
     {
         // cout << "classIndex: " << classIndex << "\n";
-        Class classObj = classVec[classIndex];
+        Class classObj = (*classVec)[classIndex];
         for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
         {
             Timing timing = classObj.timings[timingIndex];
             // cout << "timingIndex: " << timingIndex << "\n";
             if (timing.penalty != 0)
             {
-                int timingLit = t[classIndex][timingIndex];
+                int timingLit = (*t)[classIndex][timingIndex];
                 // cout << "timingLit: " << timingLit << "\n";
                 ipamir_add_soft_lit(solver, timingLit, timing.penalty);
                 verboseLog("Adding penalty: " + to_string(timing.penalty) + " to timing literal: " + to_string(timingLit));
@@ -128,7 +128,7 @@ void encodeAssignmentPenalties(void *solver,
             Room room = classObj.rooms[roomIndex];
             if (room.penalty != 0)
             {
-                int roomLit = r[classIndex][roomIndex];
+                int roomLit = (*r)[classIndex][roomIndex];
                 ipamir_add_soft_lit(solver, roomLit, room.penalty);
                 verboseLog("Adding penalty: " + to_string(room.penalty) + " to room literal: " + to_string(roomLit));
             }
@@ -148,7 +148,7 @@ void encodeRoomConflictConstraints(void *solver,
     for (int classIndex = 0; classIndex < classes; classIndex++)
     {
         const Class &c = (*classVec)[classIndex];
-        for (int roomIndex = 0; roomIndex < c.rooms.size(); roomIndex++)
+        for (size_t roomIndex = 0; roomIndex < c.rooms.size(); roomIndex++)
         {
             string roomId = c.rooms[roomIndex].id;
             roomMap[roomId].push_back({classIndex, roomIndex});
@@ -171,9 +171,9 @@ void encodeRoomConflictConstraints(void *solver,
                 const Class &class1 = (*classVec)[c1];
                 const Class &class2 = (*classVec)[c2];
 
-                for (int t1 = 0; t1 < class1.timings.size(); t1++)
+                for (size_t t1 = 0; t1 < class1.timings.size(); t1++)
                 {
-                    for (int t2 = 0; t2 < class2.timings.size(); t2++)
+                    for (size_t t2 = 0; t2 < class2.timings.size(); t2++)
                     {
                         const Timing &timing1 = class1.timings[t1];
                         const Timing &timing2 = class2.timings[t2];
@@ -233,13 +233,13 @@ void encodeRoomUnavailabilityConstraints(
     void *solver,
     int weeks,
     int days,
-    vector<vector<int>> t,
-    vector<vector<int>> r,
-    vector<Class> classVec)
+    vector<vector<int>> *t,
+    vector<vector<int>> *r,
+    vector<Class> *classVec)
 {
-    for (long unsigned int classIndex = 0; classIndex < classVec.size(); classIndex++)
+    for (long unsigned int classIndex = 0; classIndex < (*classVec).size(); classIndex++)
     {
-        Class classObj = classVec[classIndex];
+        Class classObj = (*classVec)[classIndex];
         for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
         {
             Room room = classObj.rooms[roomIndex];
@@ -271,8 +271,8 @@ void encodeRoomUnavailabilityConstraints(
 
                             if (overLap)
                             {
-                                int timingLit = t[classIndex][timingIndex];
-                                int roomLit = r[classIndex][roomIndex];
+                                int timingLit = (*t)[classIndex][timingIndex];
+                                int roomLit = ((*r))[classIndex][roomIndex];
                                 verboseLog("Adding RoomUnavailability constraint: -" + to_string(timingLit) + ", -" + to_string(roomLit) + ", 0");
                                 ipamir_add_hard(solver, -timingLit);
                                 ipamir_add_hard(solver, -roomLit);
@@ -289,8 +289,8 @@ void encodeRoomUnavailabilityConstraints(
 
 void encodeSameStartConstraint(void *solver,
                                uint32_t literalCounter,
-                               vector<vector<int>> t,
-                               map<string, Class> classMap,
+                               vector<vector<int>> *t,
+                               map<string, Class> *classMap,
                                vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -306,12 +306,12 @@ void encodeSameStartConstraint(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
+            Class class1 = (*classMap)[class1Id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
+                Class class2 = (*classMap)[class2Id];
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -321,8 +321,8 @@ void encodeSameStartConstraint(void *solver,
                         if (class1TimingStart == class2TimingStart)
                             continue;
 
-                        int periodLit1 = t[class1Index][class1TimingIndex];
-                        int periodLit2 = t[class2Index][class2TimingIndex];
+                        int periodLit1 = (*t)[class1Index][class1TimingIndex];
+                        int periodLit2 = (*t)[class2Index][class2TimingIndex];
                         verboseLog("Adding SameStart constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-periodLit1, -periodLit2},
@@ -338,9 +338,9 @@ void encodeSameStartConstraint(void *solver,
 
 void encodeSameTimeConstraint(void *solver,
                               uint32_t literalCounter,
-                              vector<vector<int>> t,
-                              map<string, Class> classMap,
-                              map<string, int> classIndexMap,
+                              vector<vector<int>> *t,
+                              map<string, Class> *classMap,
+                              map<string, int> *classIndexMap,
                               vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -356,14 +356,14 @@ void encodeSameTimeConstraint(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -375,8 +375,8 @@ void encodeSameTimeConstraint(void *solver,
                         if (!((class1TimingStart <= class2TimingStart && class2TimingEnd <= class1TimingEnd) ||
                               (class2TimingStart <= class1TimingStart && class1TimingEnd <= class2TimingEnd)))
                         {
-                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                             verboseLog("Adding SameTime constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
@@ -393,9 +393,9 @@ void encodeSameTimeConstraint(void *solver,
 
 void encodeDifferentTimeConstraint(void *solver,
                                    uint32_t literalCounter,
-                                   vector<vector<int>> t,
-                                   map<string, Class> classMap,
-                                   map<string, int> classIndexMap,
+                                   vector<vector<int>> *t,
+                                   map<string, Class> *classMap,
+                                   map<string, int> *classIndexMap,
                                    vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -411,14 +411,14 @@ void encodeDifferentTimeConstraint(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -429,8 +429,8 @@ void encodeDifferentTimeConstraint(void *solver,
                         int class2TimingEnd = class2TimingStart + class2.timings[class2TimingIndex].length;
                         if (!(class1TimingEnd <= class2TimingStart || class2TimingEnd <= class1TimingStart))
                         {
-                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                             verboseLog("Adding DifferentTime constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
@@ -448,9 +448,9 @@ void encodeDifferentTimeConstraint(void *solver,
 void encodeSameDaysConstraint(void *solver,
                               uint32_t literalCounter,
                               int days,
-                              vector<vector<int>> t,
-                              map<string, Class> classMap,
-                              map<string, int> classIndexMap,
+                              vector<vector<int>> *t,
+                              map<string, Class> *classMap,
+                              map<string, int> *classIndexMap,
                               vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -466,14 +466,14 @@ void encodeSameDaysConstraint(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -492,8 +492,8 @@ void encodeSameDaysConstraint(void *solver,
                         }
                         if (!is1SubSet && !is2SubSet)
                         {
-                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                             verboseLog("Adding SameDays constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
@@ -511,9 +511,9 @@ void encodeSameDaysConstraint(void *solver,
 void encodeDifferentDaysConstraint(void *solver,
                                    uint32_t literalCounter,
                                    int days,
-                                   vector<vector<int>> t,
-                                   map<string, Class> classMap,
-                                   map<string, int> classIndexMap,
+                                   vector<vector<int>> *t,
+                                   map<string, Class> *classMap,
+                                   map<string, int> *classIndexMap,
                                    vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -529,14 +529,14 @@ void encodeDifferentDaysConstraint(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -548,8 +548,8 @@ void encodeDifferentDaysConstraint(void *solver,
                         {
                             if (class1TimingDays[day] == '1' && class2TimingDays[day] == '1')
                             {
-                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                 verboseLog("Adding SameDays constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0 \n");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
@@ -569,9 +569,9 @@ void encodeDifferentDaysConstraint(void *solver,
 void encodeSameWeeksConstraints(void *solver,
                                 uint32_t literalCounter,
                                 int weeks,
-                                vector<vector<int>> t,
-                                map<string, Class> classMap,
-                                map<string, int> classIndexMap,
+                                vector<vector<int>> *t,
+                                map<string, Class> *classMap,
+                                map<string, int> *classIndexMap,
                                 vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -587,14 +587,14 @@ void encodeSameWeeksConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -613,8 +613,8 @@ void encodeSameWeeksConstraints(void *solver,
                         }
                         if (!is1SubSet && !is2SubSet)
                         {
-                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                            int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                            int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                             verboseLog("Adding SameWeeks constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                             ipamirAddClause(solver,
                                             {-periodLit1, -periodLit2},
@@ -632,9 +632,9 @@ void encodeSameWeeksConstraints(void *solver,
 void encodeDifferentWeeksConstraints(void *solver,
                                      uint32_t literalCounter,
                                      int weeks,
-                                     vector<vector<int>> t,
-                                     map<string, Class> classMap,
-                                     map<string, int> classIndexMap,
+                                     vector<vector<int>> *t,
+                                     map<string, Class> *classMap,
+                                     map<string, int> *classIndexMap,
                                      vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -650,14 +650,14 @@ void encodeDifferentWeeksConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
 
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
@@ -670,8 +670,8 @@ void encodeDifferentWeeksConstraints(void *solver,
                         {
                             if (class1TimingWeeks[week] == '1' && class2TimingWeeks[week] == '1')
                             {
-                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                 verboseLog("Adding DifferentWeeks constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
@@ -690,9 +690,9 @@ void encodeDifferentWeeksConstraints(void *solver,
 
 void encodeSameRoomConstraints(void *solver,
                                uint32_t literalCounter,
-                               vector<vector<int>> r,
-                               map<string, Class> classMap,
-                               map<string, int> classIndexMap,
+                               vector<vector<int>> *r,
+                               map<string, Class> *classMap,
+                               map<string, int> *classIndexMap,
                                vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -708,14 +708,14 @@ void encodeSameRoomConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
 
                 for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
                 {
@@ -726,8 +726,8 @@ void encodeSameRoomConstraints(void *solver,
                         if (class1RoomId == class2RoomId)
                             continue;
 
-                        int roomLit1 = r[class1LiteralIndex][class1RoomIndex];
-                        int roomLit2 = r[class2LiteralIndex][class2RoomIndex];
+                        int roomLit1 = (*r)[class1LiteralIndex][class1RoomIndex];
+                        int roomLit2 = (*r)[class2LiteralIndex][class2RoomIndex];
                         verboseLog("Adding SameRoom constraint: -" + to_string(roomLit1) + ", -" + to_string(roomLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
@@ -743,9 +743,9 @@ void encodeSameRoomConstraints(void *solver,
 
 void encodeDifferentRoomConstraints(void *solver,
                                     uint32_t literalCounter,
-                                    vector<vector<int>> r,
-                                    map<string, Class> classMap,
-                                    map<string, int> classIndexMap,
+                                    vector<vector<int>> *r,
+                                    map<string, Class> *classMap,
+                                    map<string, int> *classIndexMap,
                                     vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -761,14 +761,14 @@ void encodeDifferentRoomConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
 
                 for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
                 {
@@ -778,8 +778,8 @@ void encodeDifferentRoomConstraints(void *solver,
                         string class2RoomId = class2.rooms[class2RoomIndex].id;
                         if (class1RoomId != class2RoomId)
                             continue;
-                        int roomLit1 = r[class1LiteralIndex][class1RoomIndex];
-                        int roomLit2 = r[class2LiteralIndex][class2RoomIndex];
+                        int roomLit1 = (*r)[class1LiteralIndex][class1RoomIndex];
+                        int roomLit2 = (*r)[class2LiteralIndex][class2RoomIndex];
                         verboseLog("Adding DifferentRoom constraint: -" + to_string(roomLit1) + ", -" + to_string(roomLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-roomLit1, -roomLit2},
@@ -798,10 +798,9 @@ void encodeOverLapConstraints(void *solver,
                               uint32_t literalCounter,
                               int weeks,
                               int days,
-                              vector<vector<int>> t,
-                              vector<vector<int>> r,
-                              map<string, Class> classMap,
-                              map<string, int> classIndexMap,
+                              vector<vector<int>> *t,
+                              map<string, Class> *classMap,
+                              map<string, int> *classIndexMap,
                               vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -817,14 +816,14 @@ void encodeOverLapConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -840,8 +839,8 @@ void encodeOverLapConstraints(void *solver,
                                 continue;
                             if (timing1Weeks[weekIndex] != timing2Weeks[weekIndex])
                             {
-                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                 verboseLog("Adding OverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
@@ -858,8 +857,8 @@ void encodeOverLapConstraints(void *solver,
                                     continue;
                                 if (timing1Days[dayIndex] != timing2Days[dayIndex])
                                 {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                     verboseLog("Adding OverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
@@ -874,8 +873,8 @@ void encodeOverLapConstraints(void *solver,
                                                (timing2.start < timing1EndSlot);
                                 if (!overLap)
                                 {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                     verboseLog("Adding OverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
@@ -897,10 +896,9 @@ void encodeNotOverLapConstraints(void *solver,
                                  uint32_t literalCounter,
                                  int weeks,
                                  int days,
-                                 vector<vector<int>> t,
-                                 vector<vector<int>> r,
-                                 map<string, Class> classMap,
-                                 map<string, int> classIndexMap,
+                                 vector<vector<int>> *t,
+                                 map<string, Class> *classMap,
+                                 map<string, int> *classIndexMap,
                                  vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -916,14 +914,14 @@ void encodeNotOverLapConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -950,8 +948,8 @@ void encodeNotOverLapConstraints(void *solver,
                                                (timing2.start < timing1EndSlot);
                                 if (overLap)
                                 {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                     verboseLog("Adding NotOverLap constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
@@ -973,9 +971,9 @@ void encodeSameAttendeesConstraints(void *solver,
                                     uint32_t literalCounter,
                                     int weeks,
                                     int days,
-                                    vector<vector<int>> t,
-                                    map<string, Class> classMap,
-                                    map<string, int> classIndexMap,
+                                    vector<vector<int>> *t,
+                                    map<string, Class> *classMap,
+                                    map<string, int> *classIndexMap,
                                     vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -991,14 +989,14 @@ void encodeSameAttendeesConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1039,8 +1037,8 @@ void encodeSameAttendeesConstraints(void *solver,
                                         if (!((class1TimingEnd + travelTime1To2 <= class2TimingStart) ||
                                               (class2TimingEnd + travelTime2To1 <= class1TimingStart)))
                                         {
-                                            int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                            int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                            int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                            int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                             verboseLog("Adding SameAttendees constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                             ipamirAddClause(solver,
                                                             {-periodLit1, -periodLit2},
@@ -1064,9 +1062,9 @@ void encodeWorkDayConstraints(void *solver,
                               uint32_t literalCounter,
                               int weeks,
                               int days,
-                              vector<vector<int>> t,
-                              map<string, Class> classMap,
-                              map<string, int> classIndexMap,
+                              vector<vector<int>> *t,
+                              map<string, Class> *classMap,
+                              map<string, int> *classIndexMap,
                               vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1089,14 +1087,14 @@ void encodeWorkDayConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1115,8 +1113,8 @@ void encodeWorkDayConstraints(void *solver,
                             int timing2End = timing2.start + timing2.length;
                             if (S < max(timing1End, timing2End) - min(timing1.start, timing2.start))
                             {
-                                int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                 verboseLog("Adding WorkDay constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                 ipamirAddClause(solver,
                                                 {-periodLit1, -periodLit2},
@@ -1138,9 +1136,9 @@ void encodePrecedenceConstraints(void *solver,
                                  uint32_t literalCounter,
                                  int weeks,
                                  int days,
-                                 vector<vector<int>> t,
-                                 map<string, Class> classMap,
-                                 map<string, int> classIndexMap,
+                                 vector<vector<int>> *t,
+                                 map<string, Class> *classMap,
+                                 map<string, int> *classIndexMap,
                                  vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1156,14 +1154,14 @@ void encodePrecedenceConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1171,8 +1169,8 @@ void encodePrecedenceConstraints(void *solver,
                     for (long unsigned int class2TimingIndex = 0; class2TimingIndex < class2.timings.size(); class2TimingIndex++)
                     {
                         Timing timing2 = class2.timings[class2TimingIndex];
-                        int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                        int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                        int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                        int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                         bool constraintEncoded = false;
                         for (int weekIndex = 0; weekIndex < weeks && !constraintEncoded; weekIndex++)
                         {
@@ -1247,9 +1245,9 @@ void encodeMinGapConstraints(void *solver,
                              uint32_t literalCounter,
                              int weeks,
                              int days,
-                             vector<vector<int>> t,
-                             map<string, Class> classMap,
-                             map<string, int> classIndexMap,
+                             vector<vector<int>> *t,
+                             map<string, Class> *classMap,
+                             map<string, int> *classIndexMap,
                              vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1271,14 +1269,14 @@ void encodeMinGapConstraints(void *solver,
         for (size_t class1Index = 0; class1Index < distributionClasses.size(); class1Index++)
         {
             string class1Id = distributionClasses[class1Index];
-            Class class1 = classMap[class1Id];
-            int class1LiteralIndex = classIndexMap[class1.id];
+            Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
-                Class class2 = classMap[class2Id];
-                int class2LiteralIndex = classIndexMap[class2.id];
+                Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (long unsigned int class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     Timing timing1 = class1.timings[class1TimingIndex];
@@ -1305,8 +1303,8 @@ void encodeMinGapConstraints(void *solver,
                                 if (!((timing1End + G <= timing2.start) ||
                                       (timing2End + G <= timing1.start)))
                                 {
-                                    int periodLit1 = t[class1LiteralIndex][class1TimingIndex];
-                                    int periodLit2 = t[class2LiteralIndex][class2TimingIndex];
+                                    int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                                    int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                                     verboseLog("Adding MinGap(" + to_string(G) + ") constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                                     ipamirAddClause(solver,
                                                     {-periodLit1, -periodLit2},
@@ -1328,10 +1326,9 @@ void encodeMaxDaysConstraints(void *solver,
                               uint32_t literalCounter,
                               int weeks,
                               int days,
-                              vector<vector<int>> t,
-                              vector<Class> classVec,
-                              map<string, Class> classMap,
-                              map<string, int> classIndexMap,
+                              vector<vector<int>> *t,
+                              vector<Class> *classVec,
+                              map<string, Class> *classMap,
                               vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1384,9 +1381,9 @@ void encodeMaxDaysConstraints(void *solver,
         for (size_t classIndex = 0; classIndex < distributionClasses.size(); classIndex++)
         {
             string classId = distributionClasses[classIndex];
-            Class classObj = classMap[classId];
+            Class classObj = (*classMap)[classId];
             int classLiteralIndex = 0;
-            for (Class iteratorClassObj : classVec)
+            for (Class iteratorClassObj : (*classVec))
             {
                 if (classObj.id == iteratorClassObj.id)
                     break;
@@ -1401,7 +1398,7 @@ void encodeMaxDaysConstraints(void *solver,
 
                     if (timingDays[dayIndex] == '0')
                         continue;
-                    int periodLit = t[classLiteralIndex][classTimingIndex];
+                    int periodLit = (*t)[classLiteralIndex][classTimingIndex];
                     int dayUsedLit = dayUsed[dayIndex];
                     // (periodLit -> dayUsedLit)
                     ipamirAddClause(solver, {-periodLit, dayUsedLit}, literalCounter, true, 0);
@@ -1417,9 +1414,9 @@ void encodeMaxDayLoadConstraints(void *solver,
                                  uint32_t literalCounter,
                                  int weeks,
                                  int days,
-                                 vector<vector<int>> t,
-                                 map<string, Class> classMap,
-                                 map<string, int> classIndexMap,
+                                 vector<vector<int>> *t,
+                                 map<string, Class> *classMap,
+                                 map<string, int> *classIndexMap,
                                  vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1447,13 +1444,13 @@ void encodeMaxDayLoadConstraints(void *solver,
                 vector<Timing> timingVec;
                 for (string classId : distributionClasses)
                 {
-                    Class classObj = classMap[classId];
+                    Class classObj = (*classMap)[classId];
                     for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                     {
                         Timing timing = classObj.timings[timingIndex];
                         if (timing.weeks[weekIndex] == '0' || timing.days[dayIndex] == '0')
                             continue;
-                        int timingLiteral = t[classIndexMap[classId]][timingIndex];
+                        int timingLiteral = (*t)[(*classIndexMap)[classId]][timingIndex];
                         literalVec.push_back(timingLiteral);
                         timingVec.push_back(timing);
                     }
@@ -1490,9 +1487,9 @@ void encodeMaxBreaksConstraints(void *solver,
                                 int weeks,
                                 int days,
                                 int timeSlots,
-                                vector<vector<int>> t,
-                                map<string, Class> classMap,
-                                map<string, int> classIndexMap,
+                                vector<vector<int>> *t,
+                                map<string, Class> *classMap,
+                                map<string, int> *classIndexMap,
                                 vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1524,13 +1521,13 @@ void encodeMaxBreaksConstraints(void *solver,
                 vector<Timing> timingVec;
                 for (string classId : distributionClasses)
                 {
-                    Class classObj = classMap[classId];
+                    Class classObj = (*classMap)[classId];
                     for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                     {
                         Timing timing = classObj.timings[timingIndex];
                         if (timing.weeks[weekIndex] == '0' || timing.days[dayIndex] == '0')
                             continue;
-                        int timingLiteral = t[classIndexMap[classId]][timingIndex];
+                        int timingLiteral = (*t)[(*classIndexMap)[classId]][timingIndex];
                         literalVec.push_back(timingLiteral);
                         timingVec.push_back(timing);
                     }
@@ -1735,9 +1732,9 @@ void encodeMaxBlockConstraints(void *solver,
                                int weeks,
                                int days,
                                int timeSlots,
-                               vector<vector<int>> t,
-                               map<string, Class> classMap,
-                               map<string, int> classIndexMap,
+                               vector<vector<int>> *t,
+                               map<string, Class> *classMap,
+                               map<string, int> *classIndexMap,
                                vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -1768,14 +1765,14 @@ void encodeMaxBlockConstraints(void *solver,
                 set<vector<int>> encodedClauses;
                 for (string classId : distributionClasses)
                 {
-                    Class classObj = classMap[classId];
+                    Class classObj = (*classMap)[classId];
                     for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
                     {
                         Timing timing = classObj.timings[timingIndex];
                         if (timing.weeks[weekIndex] == '0' || timing.days[dayIndex] == '0')
                             continue;
-                        int timingLiteral = t[classIndexMap[classId]][timingIndex];
-                        int classIdx = classIndexMap[classId];
+                        int timingLiteral = (*t)[(*classIndexMap)[classId]][timingIndex];
+                        int classIdx = (*classIndexMap)[classId];
                         timingVec.push_back({timingLiteral, classIdx, timing});
                     }
                 }
@@ -1818,7 +1815,7 @@ void encodeMaxBlockConstraints(void *solver,
                     int aux = startLenVar[key];
 
                     vector<int> auxLiterals = {aux};
-                    vector<bool> usedClasses(classIndexMap.size(), false);
+                    vector<bool> usedClasses((*classIndexMap).size(), false);
                     usedClasses[classId] = true;
 
                     encodeViolatingBlocks(
@@ -1848,12 +1845,12 @@ void encodeConstraints(void *solver,
                        int days,
                        int timeSlots,
                        int classes,
-                       vector<vector<int>> t,
-                       vector<vector<int>> r,
-                       vector<Class> classVec,
-                       map<string, Class> classMap,
-                       map<string, int> classIndexMap,
-                       map<string, vector<DistributionVariant>> distributionsMap)
+                       vector<vector<int>> *t,
+                       vector<vector<int>> *r,
+                       vector<Class> *classVec,
+                       map<string, Class> *classMap,
+                       map<string, int> *classIndexMap,
+                       map<string, vector<DistributionVariant>> *distributionsMap)
 {
 
     cout << "Running encodeAtLeast1Timing..." << endl;
@@ -1872,66 +1869,66 @@ void encodeConstraints(void *solver,
     encodeAssignmentPenalties(solver, classes, t, r, classVec);
     cout << "Finished encodeAssignmentPenalties" << endl;
     cout << "Running encodeRoomConflictConstraints..." << endl;
-    encodeRoomConflictConstraints(solver, classes, weeks, days, &t, &r, &classVec);
+    encodeRoomConflictConstraints(solver, classes, weeks, days, t, r, classVec);
     cout << "Finished encodeRoomConflictConstraints" << endl;
     cout << "Running encodeRoomUnavailabilityConstraints..." << endl;
     encodeRoomUnavailabilityConstraints(solver, weeks, days, t, r, classVec);
     cout << "Finished encodeRoomUnavailabilityConstraints" << endl;
     cout << "Running encodeSameStartConstraint..." << endl;
-    encodeSameStartConstraint(solver, literalCounter, t, classMap, distributionsMap["SameStart"]);
+    encodeSameStartConstraint(solver, literalCounter, t, classMap, (*distributionsMap)["SameStart"]);
     cout << "Finished encodeSameStartConstraint" << endl;
     cout << "Running encodeSameTimeConstraint..." << endl;
-    encodeSameTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, distributionsMap["SameTime"]);
+    encodeSameTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["SameTime"]);
     cout << "Finished encodeSameTimeConstraint" << endl;
     cout << "Running encodeDifferentTimeConstraint..." << endl;
-    encodeDifferentTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, distributionsMap["DifferentTime"]);
+    encodeDifferentTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["DifferentTime"]);
     cout << "Finished encodeDifferentTimeConstraint" << endl;
     cout << "Running encodeSameDaysConstraint..." << endl;
-    encodeSameDaysConstraint(solver, literalCounter, days, t, classMap, classIndexMap, distributionsMap["SameDays"]);
+    encodeSameDaysConstraint(solver, literalCounter, days, t, classMap, classIndexMap, (*distributionsMap)["SameDays"]);
     cout << "Finished encodeSameDaysConstraint" << endl;
     cout << "Running encodeDifferentDaysConstraint..." << endl;
-    encodeDifferentDaysConstraint(solver, literalCounter, days, t, classMap, classIndexMap, distributionsMap["DifferentDays"]);
+    encodeDifferentDaysConstraint(solver, literalCounter, days, t, classMap, classIndexMap, (*distributionsMap)["DifferentDays"]);
     cout << "Finished encodeDifferentDaysConstraint" << endl;
     cout << "Running encodeSameWeeksConstraints..." << endl;
-    encodeSameWeeksConstraints(solver, literalCounter, weeks, t, classMap, classIndexMap, distributionsMap["SameWeeks"]);
+    encodeSameWeeksConstraints(solver, literalCounter, weeks, t, classMap, classIndexMap, (*distributionsMap)["SameWeeks"]);
     cout << "Finished encodeSameWeeksConstraints" << endl;
     cout << "Running encodeDifferentWeeksConstraints..." << endl;
-    encodeDifferentWeeksConstraints(solver, literalCounter, weeks, t, classMap, classIndexMap, distributionsMap["DifferentWeeks"]);
+    encodeDifferentWeeksConstraints(solver, literalCounter, weeks, t, classMap, classIndexMap, (*distributionsMap)["DifferentWeeks"]);
     cout << "Finished encodeDifferentWeeksConstraints" << endl;
     cout << "Running encodeSameRoomConstraints..." << endl;
-    encodeSameRoomConstraints(solver, literalCounter, r, classMap, classIndexMap, distributionsMap["SameRoom"]);
+    encodeSameRoomConstraints(solver, literalCounter, r, classMap, classIndexMap, (*distributionsMap)["SameRoom"]);
     cout << "Finished encodeSameRoomConstraints" << endl;
     cout << "Running encodeDifferentRoomConstraints..." << endl;
-    encodeDifferentRoomConstraints(solver, literalCounter, r, classMap, classIndexMap, distributionsMap["DifferentRoom"]);
+    encodeDifferentRoomConstraints(solver, literalCounter, r, classMap, classIndexMap, (*distributionsMap)["DifferentRoom"]);
     cout << "Finished encodeDifferentRoomConstraints" << endl;
     cout << "Running encodeOverLapConstraints..." << endl;
-    encodeOverLapConstraints(solver, literalCounter, weeks, days, t, r, classMap, classIndexMap, distributionsMap["OverLap"]);
+    encodeOverLapConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["OverLap"]);
     cout << "Finished encodeOverLapConstraints" << endl;
     cout << "Running encodeNotOverLapConstraints..." << endl;
-    encodeNotOverLapConstraints(solver, literalCounter, weeks, days, t, r, classMap, classIndexMap, distributionsMap["NotOverLap"]);
+    encodeNotOverLapConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["NotOverLap"]);
     cout << "Finished encodeNotOverLapConstraints" << endl;
     cout << "Running encodeSameAttendeesConstraints..." << endl;
-    encodeSameAttendeesConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["SameAttendees"]);
+    encodeSameAttendeesConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["SameAttendees"]);
     cout << "Finished encodeSameAttendeesConstraints" << endl;
     cout << "Running encodeWorkDayConstraints..." << endl;
-    encodeWorkDayConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["WorkDay"]);
+    encodeWorkDayConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["WorkDay"]);
     cout << "Finished encodeWorkDayConstraints" << endl;
     cout << "Running encodePrecedenceConstraints..." << endl;
-    encodePrecedenceConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["Precedence"]);
+    encodePrecedenceConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["Precedence"]);
     cout << "Finished encodePrecedenceConstraints" << endl;
     cout << "Running encodeMinGapConstraints..." << endl;
-    encodeMinGapConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MinGap"]);
+    encodeMinGapConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["MinGap"]);
     cout << "Finished encodeMinGapConstraints" << endl;
     cout << "Running encodeMaxDaysConstraints..." << endl;
-    encodeMaxDaysConstraints(solver, literalCounter, weeks, days, t, classVec, classMap, classIndexMap, distributionsMap["MaxDays"]);
+    encodeMaxDaysConstraints(solver, literalCounter, weeks, days, t, classVec, classMap, (*distributionsMap)["MaxDays"]);
     cout << "Finished encodeMaxDaysConstraints" << endl;
     cout << "Running encodeMaxDayLoadConstraints..." << endl;
-    encodeMaxDayLoadConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, distributionsMap["MaxDayLoad"]);
+    encodeMaxDayLoadConstraints(solver, literalCounter, weeks, days, t, classMap, classIndexMap, (*distributionsMap)["MaxDayLoad"]);
     cout << "Finished encodeMaxDayLoadConstraints" << endl;
     cout << "Running encodeMaxBreaksConstraints..." << endl;
-    encodeMaxBreaksConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBreaks"]);
+    encodeMaxBreaksConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, (*distributionsMap)["MaxBreaks"]);
     cout << "Finished encodeMaxBreaksConstraints" << endl;
     cout << "Running encodeMaxBlockConstraints..." << endl;
-    encodeMaxBlockConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, distributionsMap["MaxBlock"]);
+    encodeMaxBlockConstraints(solver, literalCounter, weeks, days, timeSlots, t, classMap, classIndexMap, (*distributionsMap)["MaxBlock"]);
     cout << "Finished encodeMaxBlockConstraints" << endl;
 }

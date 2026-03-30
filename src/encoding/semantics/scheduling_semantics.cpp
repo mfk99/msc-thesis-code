@@ -97,7 +97,7 @@ void logStudentSectioningAssignments(void *solver, StudentSectioningData section
         }
         cout << "Cluster [ ";
         cout << clusterAssignment[0].cluster.students[0].id;
-        for (int i = 1; i < clusterAssignment[0].cluster.students.size(); i++)
+        for (size_t i = 1; i < clusterAssignment[0].cluster.students.size(); i++)
         {
             cout << ", " << clusterAssignment[0].cluster.students[i].id;
         }
@@ -109,7 +109,7 @@ void logStudentSectioningAssignments(void *solver, StudentSectioningData section
         else
         {
             cout << classIds[0];
-            for (int i = 1; i < classIds.size(); i++)
+            for (size_t i = 1; i < classIds.size(); i++)
             {
                 cout << ", " << classIds[i];
             }
@@ -174,8 +174,6 @@ void runBenchMark()
     int days = generationVariables[1];
     int hours = generationVariables[2];
     int rooms = generationVariables[3];
-    int courses = generationVariables[4];
-    int courseHours = generationVariables[5];
 
     void *solver = ipamir_init();
 
@@ -238,10 +236,12 @@ void runBenchMark()
     // Map of distributions, used for generating distribution encodings
     map<string, vector<DistributionVariant>> distributionsMap = getDistributions();
 
-    logTimingLiterals(t);
-    logRoomLiterals(r);
+    logTimingLiterals(&t);
+    logRoomLiterals(&r);
 
+    cout << "Running encodeStudentSectioning" << endl;
     StudentSectioningData sectioningData = encodeStudentSectioning(solver, literalCounter, weeks, days, t, classMap, classIndexMap);
+    cout << "Finished encodeStudentSectioning" << endl;
 
     encodeConstraints(solver,
                       literalCounter,
@@ -249,12 +249,12 @@ void runBenchMark()
                       days,
                       hours,
                       classes,
-                      t,
-                      r,
-                      classVec,
-                      classMap,
-                      classIndexMap,
-                      distributionsMap);
+                      &t,
+                      &r,
+                      &classVec,
+                      &classMap,
+                      &classIndexMap,
+                      &distributionsMap);
 
     // Print answer and ask user for input
     vector<long long> results;
@@ -278,11 +278,13 @@ void runBenchMark()
     }
     for (int i = 0; i < iterations; i++)
     {
+        cout << "Running iteration " << i << endl;
         // TODO: Write encoding to file based on generate-variable
         std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         int code = ipamir_solve(solver);
         std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
         long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+        cout << "Finished iteration " << i << endl;
         results.push_back(timeDiff);
         cout << "Solving took:" << timeDiff << "[µs], " << timeDiff / 1000000.0 << "[s] \n";
         cout << "Code returned by ipamir: " << code << "\n";

@@ -11,12 +11,12 @@ void verboseLog(string log)
         cout << "[VERBOSE] " << log << "\n";
 }
 
-void logTimingLiterals(vector<vector<int>> t)
+void logTimingLiterals(vector<vector<int>> *t)
 {
     if (!opts.verbose)
         return;
     verboseLog("timing literals: ");
-    for (vector<int> classPeriods : t)
+    for (vector<int> classPeriods : (*t))
     {
         for (int periodLiteral : classPeriods)
         {
@@ -26,12 +26,12 @@ void logTimingLiterals(vector<vector<int>> t)
     }
 }
 
-void logRoomLiterals(vector<vector<int>> r)
+void logRoomLiterals(vector<vector<int>> *r)
 {
     if (!opts.verbose)
         return;
     verboseLog("room literals: ");
-    for (vector<int> classRooms : r)
+    for (vector<int> classRooms : (*r))
     {
         for (int roomLiteral : classRooms)
         {
