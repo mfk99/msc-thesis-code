@@ -508,6 +508,13 @@ StudentSectioningData encodeStudentSectioning(void *solver,
 {
 
     vector<Student> students = getStudents();
+    if (students.empty())
+    {
+        StudentSectioningData data;
+        data.s = {};
+        data.conf = {};
+        return data;
+    }
     vector<HierarchyCourse> hierarchyVec = getClassHierarchy();
     vector<StudentCluster> studentClusters = createStudentClusters(students, hierarchyVec, literalCounter);
 
