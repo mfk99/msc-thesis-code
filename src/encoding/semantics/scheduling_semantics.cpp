@@ -134,15 +134,14 @@ vector<int> parseUserClauseInput(string input)
     return clauseLiterals;
 }
 
-void penalizeSolution(void *solver, int iteration, vector<vector<int>> t, vector<vector<int>> r)
+void penalizeSolution(void *solver, int iteration, vector<vector<int>> *t, vector<vector<int>> *r)
 {
     int weight = iteration + 1;
-
-    for (vector<int> classTimingLiterals : t)
+    for (vector<int> classTimingLiterals : (*t))
     {
         for (int timingLiteral : classTimingLiterals)
         {
-            if (ipamir_val_lit(solver, timingLiteral))
+            if (0 < ipamir_val_lit(solver, timingLiteral))
             {
                 ipamir_add_soft_lit(solver, timingLiteral, weight);
                 verboseLog("Penalizing timing lit " + to_string(timingLiteral) + " with weight " + to_string(weight));
@@ -151,11 +150,11 @@ void penalizeSolution(void *solver, int iteration, vector<vector<int>> t, vector
         }
     }
 
-    for (vector<int> classRoomLiterals : r)
+    for (vector<int> classRoomLiterals : (*r))
     {
         for (int roomLiteral : classRoomLiterals)
         {
-            if (ipamir_val_lit(solver, roomLiteral))
+            if (0 < ipamir_val_lit(solver, roomLiteral))
             {
                 ipamir_add_soft_lit(solver, roomLiteral, weight);
                 verboseLog("Penalizing room lit " + to_string(roomLiteral) + " with weight " + to_string(weight));
@@ -283,6 +282,7 @@ void runBenchMark()
         std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
         int code = ipamir_solve(solver);
         std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+        cout << "Solved!" << endl;
         long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
         cout << "Finished iteration " << i << endl;
         results.push_back(timeDiff);
@@ -295,7 +295,7 @@ void runBenchMark()
             uint64_t penalty = ipamir_val_obj(solver);
             cout << "Penalty incurred by the solution: " << penalty << "\n";
         }
-        penalizeSolution(solver, i, t, r);
+        penalizeSolution(solver, i, &t, &r);
     }
     writeResultsToFile(results);
     cout << "Releasing ipamir...\n";
