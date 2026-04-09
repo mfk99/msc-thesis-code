@@ -484,7 +484,8 @@ void encodeConflictingSchedules(void *solver,
                                                             {-periodLit1, -periodLit2, -class1DecisionLiteral, -class2DecisionLiteral},
                                                             literalCounter,
                                                             required,
-                                                            penalty);
+                                                            penalty,
+                                                            ClauseType::DISTRIBUTION);
                                             constraintEncoded = true;
                                         }
                                     }

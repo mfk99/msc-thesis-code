@@ -8,9 +8,13 @@
 #include <iostream>
 #include "DistributionTypes.h"
 #include "ClassTypes.h"
+#include "config.h"
 
 using namespace std;
 using namespace pugi;
+
+OptimizationCriteria optimization;
+string problemName;
 
 /* The style of creating a configuration file
 largely adheres to the ITC 2019 data format.
@@ -116,7 +120,6 @@ void generateConfig(vector<int> configVariables)
         classIds.push_back(courseClassIds);
     }
 
-    // TODO: add the rest
     // Add default SameStart constraint
     for (int course = 0; course < courses; course++)
     {
@@ -205,9 +208,12 @@ void generateConfig(vector<int> configVariables)
     doc.save_file(filePathChar);
 }
 
+static void initializeGlobalVars(xml_document *doc);
+
 vector<int> getConfigVariables()
 {
     xml_document doc = openXmlFile();
+    initializeGlobalVars(&doc);
 
     xml_node problemNode = doc.child("problem");
     int weeks = problemNode.attribute("nrWeeks").as_int();
@@ -540,4 +546,52 @@ map<string, vector<DistributionVariant>> getDistributions()
     }
 
     return distributions;
+}
+
+void initializeOptimizationCriteria(xml_node *problemNode)
+{
+    xml_node optimizationNode = problemNode->child("optimization");
+    if (!optimizationNode)
+    {
+        optimization.multiplierMap[TIME] = 1;
+        optimization.multiplierMap[ROOM] = 1;
+        optimization.multiplierMap[DISTRIBUTION] = 1;
+        optimization.multiplierMap[STUDENT] = 1;
+        return;
+    }
+
+    xml_attribute timeAttribute = optimizationNode.attribute("time");
+    if (timeAttribute)
+        optimization.multiplierMap[TIME] = timeAttribute.as_uint();
+    else
+        optimization.multiplierMap[TIME] = 1;
+
+    xml_attribute roomAttribute = optimizationNode.attribute("room");
+    if (roomAttribute)
+        optimization.multiplierMap[ROOM] = roomAttribute.as_uint();
+    else
+        optimization.multiplierMap[ROOM] = 1;
+
+    xml_attribute distributionAttribute = optimizationNode.attribute("distribution");
+    if (distributionAttribute)
+        optimization.multiplierMap[DISTRIBUTION] = distributionAttribute.as_uint();
+    else
+        optimization.multiplierMap[DISTRIBUTION] = 1;
+
+    xml_attribute studentAttribute = optimizationNode.attribute("student");
+    if (studentAttribute)
+        optimization.multiplierMap[STUDENT] = studentAttribute.as_uint();
+    else
+        optimization.multiplierMap[STUDENT] = 1;
+}
+
+void initializeGlobalVars(xml_document *doc)
+{
+    xml_node problemNode = doc->child("problem");
+    initializeOptimizationCriteria(&problemNode);
+    xml_attribute problemNameAttribute = problemNode.attribute("name");
+    if (problemNameAttribute)
+        problemName = problemNameAttribute.as_string();
+    else
+        problemName = "unnamed_problem";
 }

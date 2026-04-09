@@ -5,12 +5,6 @@
 
 using namespace std;
 
-void ipamirAddClause(void *solver,
-                     vector<int> clause,
-                     uint32_t &literalCount,
-                     bool hardClause,
-                     int penalty = 0);
-
 void encodeConstraints(void *solver,
                        uint32_t literalCounter,
                        int weeks,

@@ -3,6 +3,8 @@
 #include "../../utils/input_parser/input_parser.h"
 #include "../../utils/logging/logging.h"
 #include "../../..//libs/ipamir/ipamir.h"
+#include "../../utils/config/config.h"
+#include "ipamir_clause_builder.h"
 
 void ipamirAddSoftClause(void *solver, std::vector<int> clause, uint32_t &literalCount, int penalty)
 {
@@ -33,7 +35,7 @@ void ipamirAddSoftClause(void *solver, std::vector<int> clause, uint32_t &litera
         std::cout << softLit << ", 0\n";
 }
 
-void ipamirAddClause(void *solver, std::vector<int> clause, uint32_t &literalCount, bool hardClause, int penalty = 0)
+void ipamirAddClause(void *solver, std::vector<int> clause, uint32_t &literalCount, bool hardClause, int penalty, ClauseType type)
 {
     if (hardClause)
     {
@@ -45,6 +47,9 @@ void ipamirAddClause(void *solver, std::vector<int> clause, uint32_t &literalCou
     }
     else
     {
+        if (type != CLAUSE_NONE)
+            penalty *= optimization.multiplierMap[type];
+
         ipamirAddSoftClause(solver, clause, literalCount, penalty);
     }
 }

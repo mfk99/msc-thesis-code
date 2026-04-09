@@ -12,7 +12,7 @@ CXXFLAGS ?= -Wall -DNDEBUG -O3 -std=c++17
 CXXFLAGS += -I/usr/include
 CXXFLAGS += -Ilibs/cxxopts/include
 
-IPAMIRSOLVER ?= solver2022
+IPAMIRSOLVER ?= solver2022#EvalMaxSAT2022 | iMaxHS | solver2022 | uwrmaxsat14 | uwrmaxsat14scip
 IPASIRSOLVER ?= minisat220
 RUSTSAT = ./libs/rustsat/target/release/librustsat_capi.a
 

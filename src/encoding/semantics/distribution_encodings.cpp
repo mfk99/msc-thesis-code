@@ -328,7 +328,8 @@ void encodeSameStartConstraint(void *solver,
                                         {-periodLit1, -periodLit2},
                                         literalCounter,
                                         required,
-                                        penalty);
+                                        penalty,
+                                        ClauseType::DISTRIBUTION);
                     }
                 }
             }
@@ -382,7 +383,8 @@ void encodeSameTimeConstraint(void *solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
                                             required,
-                                            penalty);
+                                            penalty,
+                                            ClauseType::DISTRIBUTION);
                         }
                     }
                 }
@@ -436,7 +438,8 @@ void encodeDifferentTimeConstraint(void *solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
                                             required,
-                                            penalty);
+                                            penalty,
+                                            ClauseType::DISTRIBUTION);
                         }
                     }
                 }
@@ -499,7 +502,8 @@ void encodeSameDaysConstraint(void *solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
                                             required,
-                                            penalty);
+                                            penalty,
+                                            ClauseType::DISTRIBUTION);
                         }
                     }
                 }
@@ -555,7 +559,8 @@ void encodeDifferentDaysConstraint(void *solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
                                                 required,
-                                                penalty);
+                                                penalty,
+                                                ClauseType::DISTRIBUTION);
                                 break;
                             }
                         }
@@ -620,7 +625,8 @@ void encodeSameWeeksConstraints(void *solver,
                                             {-periodLit1, -periodLit2},
                                             literalCounter,
                                             required,
-                                            penalty);
+                                            penalty,
+                                            ClauseType::DISTRIBUTION);
                         }
                     }
                 }
@@ -677,7 +683,8 @@ void encodeDifferentWeeksConstraints(void *solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
                                                 required,
-                                                penalty);
+                                                penalty,
+                                                ClauseType::DISTRIBUTION);
                                 break;
                             }
                         }
@@ -733,7 +740,8 @@ void encodeSameRoomConstraints(void *solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
                                         required,
-                                        penalty);
+                                        penalty,
+                                        ClauseType::DISTRIBUTION);
                     }
                 }
             }
@@ -785,7 +793,8 @@ void encodeDifferentRoomConstraints(void *solver,
                                         {-roomLit1, -roomLit2},
                                         literalCounter,
                                         required,
-                                        penalty);
+                                        penalty,
+                                        ClauseType::DISTRIBUTION);
                     }
                 }
             }
@@ -846,7 +855,8 @@ void encodeOverLapConstraints(void *solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
                                                 required,
-                                                penalty);
+                                                penalty,
+                                                ClauseType::DISTRIBUTION);
                                 constraintEncoded = true;
                             }
                             for (int dayIndex = 0; dayIndex < days && !constraintEncoded; dayIndex++)
@@ -864,7 +874,8 @@ void encodeOverLapConstraints(void *solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
                                                     required,
-                                                    penalty);
+                                                    penalty,
+                                                    ClauseType::DISTRIBUTION);
                                     constraintEncoded = true;
                                 }
                                 int timing1EndSlot = timing1.start + timing1.length;
@@ -880,7 +891,8 @@ void encodeOverLapConstraints(void *solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
                                                     required,
-                                                    penalty);
+                                                    penalty,
+                                                    ClauseType::DISTRIBUTION);
                                     constraintEncoded = true;
                                 }
                             }
@@ -955,7 +967,8 @@ void encodeNotOverLapConstraints(void *solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
                                                     required,
-                                                    penalty);
+                                                    penalty,
+                                                    ClauseType::DISTRIBUTION);
                                     constraintEncoded = true;
                                 }
                             }
@@ -1071,7 +1084,8 @@ void encodeSameAttendeesConstraints(void *solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
                                                 required,
-                                                penalty);
+                                                penalty,
+                                                ClauseType::DISTRIBUTION);
                                 constraintEncoded = true;
                             }
                         }
@@ -1144,7 +1158,8 @@ void encodeWorkDayConstraints(void *solver,
                                                 {-periodLit1, -periodLit2},
                                                 literalCounter,
                                                 required,
-                                                penalty);
+                                                penalty,
+                                                ClauseType::DISTRIBUTION);
                                 break;
                             }
                         }
@@ -1213,7 +1228,8 @@ void encodePrecedenceConstraints(void *solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
                                                         required,
-                                                        penalty);
+                                                        penalty,
+                                                        ClauseType::DISTRIBUTION);
                                         constraintEncoded = true;
                                     }
                                 }
@@ -1237,7 +1253,8 @@ void encodePrecedenceConstraints(void *solver,
                                                                 {-periodLit1, -periodLit2},
                                                                 literalCounter,
                                                                 required,
-                                                                penalty);
+                                                                penalty,
+                                                                ClauseType::DISTRIBUTION);
                                                 constraintEncoded = true;
                                             }
                                         }
@@ -1252,7 +1269,8 @@ void encodePrecedenceConstraints(void *solver,
                                                         {-periodLit1, -periodLit2},
                                                         literalCounter,
                                                         required,
-                                                        penalty);
+                                                        penalty,
+                                                        ClauseType::DISTRIBUTION);
                                         constraintEncoded = true;
                                     }
                                 }
@@ -1334,7 +1352,8 @@ void encodeMinGapConstraints(void *solver,
                                                     {-periodLit1, -periodLit2},
                                                     literalCounter,
                                                     required,
-                                                    penalty);
+                                                    penalty,
+                                                    ClauseType::DISTRIBUTION);
                                     constraintEncoded = true;
                                 }
                             }
@@ -1425,7 +1444,7 @@ void encodeMaxDaysConstraints(void *solver,
                     int periodLit = (*t)[classLiteralIndex][classTimingIndex];
                     int dayUsedLit = dayUsed[dayIndex];
                     // (periodLit -> dayUsedLit)
-                    ipamirAddClause(solver, {-periodLit, dayUsedLit}, literalCounter, true, 0);
+                    ipamirAddClause(solver, {-periodLit, dayUsedLit}, literalCounter, required, penalty, ClauseType::DISTRIBUTION);
                     verboseLog("Adding MaxDays(" + to_string(D) + ") constraint: -" + to_string(periodLit) + ", " + to_string(dayUsedLit) + ", 0 ");
                 }
             }
@@ -1714,7 +1733,7 @@ void encodeViolatingBlocks(
             // Check if clause already encoded
             if (encodedClauses.insert(clause).second)
             {
-                ipamirAddClause(solver, clause, literalCounter, required, penalty);
+                ipamirAddClause(solver, clause, literalCounter, required, penalty, ClauseType::DISTRIBUTION);
                 if (opts.verbose)
                 {
                     cout << "[VERBOSE] Found MaxBlock violation: [ ";
