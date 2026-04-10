@@ -136,28 +136,29 @@ vector<int> parseUserClauseInput(string input)
 
 void penalizeSolution(void *solver, int iteration, vector<vector<int>> *t, vector<vector<int>> *r)
 {
-    int weight = iteration + 1;
+    int timingWeight = (iteration + 1) * optimization.multiplierMap[TIME];
     for (vector<int> classTimingLiterals : (*t))
     {
         for (int timingLiteral : classTimingLiterals)
         {
             if (0 < ipamir_val_lit(solver, timingLiteral))
             {
-                ipamir_add_soft_lit(solver, timingLiteral, weight);
-                verboseLog("Penalizing timing lit " + to_string(timingLiteral) + " with weight " + to_string(weight));
+                ipamir_add_soft_lit(solver, timingLiteral, timingWeight);
+                verboseLog("Penalizing timing lit " + to_string(timingLiteral) + " with weight " + to_string(timingWeight));
                 break;
             }
         }
     }
 
+    int roomWeight = (iteration + 1) * optimization.multiplierMap[ROOM];
     for (vector<int> classRoomLiterals : (*r))
     {
         for (int roomLiteral : classRoomLiterals)
         {
             if (0 < ipamir_val_lit(solver, roomLiteral))
             {
-                ipamir_add_soft_lit(solver, roomLiteral, weight);
-                verboseLog("Penalizing room lit " + to_string(roomLiteral) + " with weight " + to_string(weight));
+                ipamir_add_soft_lit(solver, roomLiteral, roomWeight);
+                verboseLog("Penalizing room lit " + to_string(roomLiteral) + " with weight " + to_string(roomWeight));
                 break;
             }
         }
