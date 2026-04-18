@@ -10,6 +10,7 @@ struct Options
     bool execute = false;
     bool manual_input = false;
     int iterations;
+    int testType;
     std::vector<int> generationVariables;
     std::string filePath;
 };
