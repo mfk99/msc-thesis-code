@@ -11,6 +11,7 @@
 #include "../../utils/file_writer/file_writer.h"
 #include "../../../libs/ipamir/ipamir.h"
 #include "student_sectioning.h"
+#include "scheduling_semantics.h"
 
 using namespace std;
 
@@ -257,7 +258,7 @@ void runBenchMark()
                       &distributionsMap);
 
     // Print answer and ask user for input
-    vector<long long> results;
+    vector<Result> results;
     int iterations = opts.iterations;
     if (opts.manual_input)
     {
@@ -286,16 +287,25 @@ void runBenchMark()
         cout << "Solved!" << endl;
         long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
         cout << "Finished iteration " << i << endl;
-        results.push_back(timeDiff);
-        cout << "Solving took:" << timeDiff << "[µs], " << timeDiff / 1000000.0 << "[s] \n";
+        cout << "Solving took:" << timeDiff / 1000.0 << "[ms], " << timeDiff / 1000000.0 << "[s] \n";
         cout << "Code returned by ipamir: " << code << "\n";
+        Result result;
+        result.solveTimeMs = timeDiff / 1000.0;
         if (code == 30)
         {
             logClassAssignments(solver, classes, classVec, t, r);
             logStudentSectioningAssignments(solver, sectioningData);
             uint64_t penalty = ipamir_val_obj(solver);
+            result.satisfied = true;
+            result.penalty = penalty;
             cout << "Penalty incurred by the solution: " << penalty << "\n";
         }
+        else
+        {
+            result.satisfied = false;
+            result.penalty = 0;
+        }
+        results.push_back(result);
         penalizeSolution(solver, i, &t, &r);
     }
     writeResultsToFile(results);
