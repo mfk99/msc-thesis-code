@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <tuple>
 #include <string>
 #include <stdint.h>
 
@@ -11,5 +12,12 @@ struct Result
     uint64_t penalty;
 };
 
-std::vector<int> parseUserClauseInput(std::string input);
+struct IterationResult
+{
+    std::vector<Result> results;
+    std::vector<std::tuple<std::string, uint16_t>> optimization;
+};
+
+std::vector<int>
+parseUserClauseInput(std::string input);
 void runBenchMark();

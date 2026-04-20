@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <chrono>
+#include <tuple>
 #include "distribution_encodings.h"
 #include "../../utils/logging/logging.h"
 #include "../../utils/input_parser/input_parser.h"
@@ -135,6 +136,24 @@ vector<int> parseUserClauseInput(string input)
     return clauseLiterals;
 }
 
+void requestInput(void *solver)
+{
+    while (true)
+    {
+        cout << "Insert a new clause or give an empty input to execute benchmark \n";
+        string input;
+        std::getline(cin, input);
+        if (input.size() == 0)
+            break;
+        vector<int> clauseLiterals = parseUserClauseInput(input);
+        for (int lit : clauseLiterals)
+        {
+            verboseLog("Adding literal " + to_string(lit));
+            ipamir_add_hard(solver, lit);
+        }
+    }
+}
+
 void penalizeSolution(void *solver, int iteration, vector<vector<int>> *t, vector<vector<int>> *r)
 {
     int timingWeight = (iteration + 1) * optimization.multiplierMap[TIME];
@@ -166,10 +185,99 @@ void penalizeSolution(void *solver, int iteration, vector<vector<int>> *t, vecto
     }
 }
 
-void runBenchMark()
+vector<tuple<string, uint16_t>> getOptimizationVariables()
 {
+    vector<tuple<string, uint16_t>> optimizationVars;
+    for (const auto &[key, value] : optimization.multiplierMap)
+    {
+        if (key == TIME)
+            optimizationVars.push_back({"time", value});
+        else if (key == ROOM)
+            optimizationVars.push_back({"room", value});
+        else if (key == DISTRIBUTION)
+            optimizationVars.push_back({"distribution", value});
+        else if (key == STUDENT)
+            optimizationVars.push_back({"student", value});
+    }
+    return optimizationVars;
+}
 
-    vector<int> generationVariables = getConfigVariables();
+tuple<vector<vector<int>>, vector<vector<int>>>
+initializeAssignmentLiteral(uint32_t *literalCounter, map<string, Class> classMap)
+{
+    vector<vector<int>> t;
+    vector<vector<int>> r;
+    for (auto &[classId, classObj] : classMap)
+    {
+        // Initilaize t
+        vector<int> timingLiterals;
+        if (opts.verbose)
+            cout << "[VERBOSE] Created timing assignment literals " << *literalCounter;
+        for ([[maybe_unused]] Timing timing : classObj.timings)
+        {
+            timingLiterals.push_back(*literalCounter);
+            (*literalCounter)++;
+        }
+        if (opts.verbose)
+            cout << " - " << *literalCounter - 1 << " for course " << classId << "\n";
+        t.push_back(timingLiterals);
+
+        // Initilaize r
+        vector<int> roomLiterals;
+        if (opts.verbose)
+            cout << "[VERBOSE] Created room assignment literals " << *literalCounter;
+        for ([[maybe_unused]] Room room : classObj.rooms)
+        {
+            roomLiterals.push_back(*literalCounter);
+            (*literalCounter)++;
+        }
+        if (opts.verbose)
+            cout << " - " << *literalCounter - 1 << " for course " << classId << "\n";
+        r.push_back(roomLiterals);
+    }
+    return {t, r};
+}
+
+Result runBenchMarkIteration(int *i,
+                             void *solver,
+                             int classes,
+                             vector<vector<int>> *t,
+                             vector<vector<int>> *r,
+                             vector<Class> *classVec,
+                             StudentSectioningData *sectioningData)
+{
+    cout << "Running iteration " << *i << endl;
+    // TODO: Write encoding to file based on generate-variable
+    std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+    int code = ipamir_solve(solver);
+    std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+    cout << "Solved!" << endl;
+    long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+    cout << "Finished iteration " << *i << endl;
+    cout << "Solving took:" << timeDiff / 1000.0 << "[ms], " << timeDiff / 1000000.0 << "[s] \n";
+    cout << "Code returned by ipamir: " << code << "\n";
+    Result result;
+    result.solveTimeMs = timeDiff / 1000.0;
+    if (code == 30)
+    {
+        logClassAssignments(solver, classes, *classVec, *t, *r);
+        logStudentSectioningAssignments(solver, *sectioningData);
+        uint64_t penalty = ipamir_val_obj(solver);
+        result.satisfied = true;
+        result.penalty = penalty;
+        cout << "Penalty incurred by the solution: " << penalty << "\n";
+    }
+    else
+    {
+        result.satisfied = false;
+        result.penalty = 0;
+    }
+    penalizeSolution(solver, *i, t, r);
+    return result;
+}
+
+vector<Result> runBenchMarkInstance(vector<int> generationVariables)
+{
 
     int weeks = generationVariables[0];
     int days = generationVariables[1];
@@ -193,41 +301,10 @@ void runBenchMark()
         index++;
     }
 
-    // Represents class period assignments
-    vector<vector<int>> t;
-    // Represents class room assignments
-    vector<vector<int>> r;
-
     uint32_t literalCounter = 1;
 
-    for (auto &[classId, classObj] : classMap)
-    {
-        // Initilaize t
-        vector<int> timingLiterals;
-        if (opts.verbose)
-            cout << "[VERBOSE] Created timing assignment literals " << literalCounter;
-        for ([[maybe_unused]] Timing timing : classObj.timings)
-        {
-            timingLiterals.push_back(literalCounter);
-            literalCounter++;
-        }
-        if (opts.verbose)
-            cout << " - " << literalCounter - 1 << " for course " << classId << "\n";
-        t.push_back(timingLiterals);
-
-        // Initilaize r
-        vector<int> roomLiterals;
-        if (opts.verbose)
-            cout << "[VERBOSE] Created room assignment literals " << literalCounter;
-        for ([[maybe_unused]] Room room : classObj.rooms)
-        {
-            roomLiterals.push_back(literalCounter);
-            literalCounter++;
-        }
-        if (opts.verbose)
-            cout << " - " << literalCounter - 1 << " for course " << classId << "\n";
-        r.push_back(roomLiterals);
-    }
+    // t represents class period assignments, r represents class room assignments
+    auto [t, r] = initializeAssignmentLiteral(&literalCounter, classMap);
 
     verboseLog("Creating clauses for " +
                to_string(classes) + " classes with " +
@@ -259,57 +336,75 @@ void runBenchMark()
 
     // Print answer and ask user for input
     vector<Result> results;
-    int iterations = opts.iterations;
     if (opts.manual_input)
+        requestInput(solver);
+    for (int i = 0; i < opts.iterations; i++)
     {
-        while (true)
+        results.push_back(runBenchMarkIteration(&i, solver, classes, &t, &r, &classVec, &sectioningData));
+    }
+    cout << "Releasing ipamir...\n";
+    ipamir_release(solver);
+    return results;
+}
+
+vector<IterationResult> runOptimizationSwapBenchMark()
+{
+    vector<IterationResult> iterationResults;
+    vector<int> configVariables = getConfigVariables();
+    vector<int> optimizationVars = {1, 10};
+    for (int timeMultiplier : optimizationVars)
+    {
+        optimization.multiplierMap[TIME] = timeMultiplier;
+        for (int roomMultiplier : optimizationVars)
         {
-            cout << "Insert a new clause or give an empty input to execute benchmark \n";
-            string input;
-            std::getline(cin, input);
-            if (input.size() == 0)
-                break;
-            vector<int> clauseLiterals = parseUserClauseInput(input);
-            for (int lit : clauseLiterals)
+            optimization.multiplierMap[ROOM] = roomMultiplier;
+            for (int distributionMultiplier : optimizationVars)
             {
-                verboseLog("Adding literal " + to_string(lit));
-                ipamir_add_hard(solver, lit);
+                optimization.multiplierMap[DISTRIBUTION] = distributionMultiplier;
+                for (int studentMultiplier : optimizationVars)
+                {
+                    optimization.multiplierMap[STUDENT] = studentMultiplier;
+                    verboseLog("Running a benchmarking instance with optimization { time: " +
+                               to_string(optimization.multiplierMap[TIME]) + ", room: " +
+                               to_string(optimization.multiplierMap[ROOM]) + ", distribution: " +
+                               to_string(optimization.multiplierMap[DISTRIBUTION]) + ", student: " +
+                               to_string(optimization.multiplierMap[STUDENT]) + "}");
+
+                    vector<Result> results = runBenchMarkInstance(configVariables);
+                    IterationResult iterationResult;
+                    iterationResult.optimization = getOptimizationVariables();
+                    iterationResult.results = results;
+                    iterationResults.push_back(iterationResult);
+                }
             }
         }
     }
-    for (int i = 0; i < iterations; i++)
+    return iterationResults;
+}
+
+void runAssumptionBenchMark()
+{
+    vector<int> configVariables = getConfigVariables();
+}
+
+void runBenchMark()
+{
+    if (opts.testType == 1)
     {
-        cout << "Running iteration " << i << endl;
-        // TODO: Write encoding to file based on generate-variable
-        std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-        int code = ipamir_solve(solver);
-        std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
-        cout << "Solved!" << endl;
-        long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-        cout << "Finished iteration " << i << endl;
-        cout << "Solving took:" << timeDiff / 1000.0 << "[ms], " << timeDiff / 1000000.0 << "[s] \n";
-        cout << "Code returned by ipamir: " << code << "\n";
-        Result result;
-        result.solveTimeMs = timeDiff / 1000.0;
-        if (code == 30)
-        {
-            logClassAssignments(solver, classes, classVec, t, r);
-            logStudentSectioningAssignments(solver, sectioningData);
-            uint64_t penalty = ipamir_val_obj(solver);
-            result.satisfied = true;
-            result.penalty = penalty;
-            cout << "Penalty incurred by the solution: " << penalty << "\n";
-        }
-        else
-        {
-            result.satisfied = false;
-            result.penalty = 0;
-        }
-        results.push_back(result);
-        penalizeSolution(solver, i, &t, &r);
+        vector<int> configVariables = getConfigVariables();
+        vector<Result> results = runBenchMarkInstance(configVariables);
+        IterationResult iterationResults;
+        iterationResults.optimization = getOptimizationVariables();
+        iterationResults.results = results;
+        writeResultsToFile(iterationResults);
     }
-    writeResultsToFile(results);
-    cout << "Releasing ipamir...\n";
-    ipamir_release(solver);
-    cout << "Exiting...\n";
+    else if (opts.testType == 2)
+    {
+        vector<IterationResult> results = runOptimizationSwapBenchMark();
+        writeMultipleIterationResultsToFile(results);
+    }
+    else if (opts.testType == 3)
+    {
+        runAssumptionBenchMark();
+    }
 }

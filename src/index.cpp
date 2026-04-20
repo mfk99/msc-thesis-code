@@ -15,6 +15,7 @@ int main(int argc, char **argv)
     {
         cout << "Executing... \n";
         runBenchMark();
+        cout << "Exiting...\n";
     }
 
     return 0;
