@@ -5,6 +5,7 @@
 #include <string>
 #include <chrono>
 #include <tuple>
+#include <algorithm>
 #include "distribution_encodings.h"
 #include "../../utils/logging/logging.h"
 #include "../../utils/input_parser/input_parser.h"
@@ -15,6 +16,14 @@
 #include "scheduling_semantics.h"
 
 using namespace std;
+
+const char *getSolverSignature()
+{
+    void *solver = ipamir_init();
+    const char *signature = ipamir_signature();
+    ipamir_release(solver);
+    return signature;
+}
 
 void logClassAssignments(void *solver,
                          int classes,
@@ -238,24 +247,28 @@ initializeAssignmentLiteral(uint32_t *literalCounter, map<string, Class> classMa
     return {t, r};
 }
 
-Result runBenchMarkIteration(int *i,
-                             void *solver,
-                             int classes,
-                             vector<vector<int>> *t,
-                             vector<vector<int>> *r,
-                             vector<Class> *classVec,
-                             StudentSectioningData *sectioningData)
+tuple<int, long long> solveInstance(void *solver)
 {
-    cout << "Running iteration " << *i << endl;
     // TODO: Write encoding to file based on generate-variable
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
     int code = ipamir_solve(solver);
     std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
     cout << "Solved!" << endl;
     long long timeDiff = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-    cout << "Finished iteration " << *i << endl;
     cout << "Solving took:" << timeDiff / 1000.0 << "[ms], " << timeDiff / 1000000.0 << "[s] \n";
     cout << "Code returned by ipamir: " << code << "\n";
+    return {code, timeDiff};
+}
+
+Result evaluateResult(void *solver,
+                      int classes,
+                      int code,
+                      long long timeDiff,
+                      vector<vector<int>> *t,
+                      vector<vector<int>> *r,
+                      vector<Class> *classVec,
+                      StudentSectioningData *sectioningData)
+{
     Result result;
     result.solveTimeMs = timeDiff / 1000.0;
     if (code == 30)
@@ -272,8 +285,192 @@ Result runBenchMarkIteration(int *i,
         result.satisfied = false;
         result.penalty = 0;
     }
+    return result;
+}
+
+Result runBenchMarkIteration(int *i,
+                             void *solver,
+                             int classes,
+                             vector<vector<int>> *t,
+                             vector<vector<int>> *r,
+                             vector<Class> *classVec,
+                             StudentSectioningData *sectioningData)
+{
+    cout << "Running iteration " << *i << endl;
+    auto [code, timeDiff] = solveInstance(solver);
+    cout << "Finished iteration " << *i << endl;
+    Result result = evaluateResult(solver, classes, code, timeDiff, t, r, classVec, sectioningData);
     penalizeSolution(solver, *i, t, r);
     return result;
+}
+
+Result runAssumptionBenchMarkIteration(int *i,
+                                       void *solver,
+                                       int classes,
+                                       vector<vector<int>> *t,
+                                       vector<vector<int>> *r,
+                                       vector<Class> *classVec,
+                                       StudentSectioningData *sectioningData)
+{
+    cout << "Running iteration " << *i << endl;
+    if (*i == 0)
+    {
+        cout << "*i == 0 \n";
+        auto [code, timeDiff] = solveInstance(solver);
+        cout << "Finished iteration " << *i << endl;
+        Result result = evaluateResult(solver, classes, code, timeDiff, t, r, classVec, sectioningData);
+        return result;
+    }
+
+    // Retrieve assigned rooms and timeslots
+    map<string, vector<int>> roomLiterals;
+    map<string, bool> roomAssigned;
+
+    map<int, map<int, vector<int>>> timingLiterals;
+    map<int, map<int, bool>> timingAssigned;
+    for (int classIndex = 0; classIndex < classes; classIndex++)
+    {
+        Class classObj = (*classVec)[classIndex];
+        string classId = classObj.id;
+
+        // Build map of room assignment literals
+
+        for (long unsigned int roomIndex = 0; roomIndex < classObj.rooms.size(); roomIndex++)
+        {
+            int roomLit = (*r)[classIndex][roomIndex];
+            Room room = classObj.rooms[roomIndex];
+            string roomId = room.id;
+            roomLiterals[roomId].push_back(roomLit);
+            if (0 < ipamir_val_lit(solver, roomLit))
+            {
+                roomAssigned[roomId] = true;
+            }
+        }
+
+        // Build map of timing assignment literals
+
+        for (long unsigned int timingIndex = 0; timingIndex < classObj.timings.size(); timingIndex++)
+        {
+            int timingLit = (*t)[classIndex][timingIndex];
+            Timing timing = classObj.timings[timingIndex];
+            string timingWeeks = timing.weeks;
+            string timingDays = timing.days;
+            for (size_t weekIndex = 0; weekIndex < timingWeeks.length(); weekIndex++)
+            {
+                if (timingWeeks[weekIndex] == '0')
+                    continue;
+                for (size_t dayIndex = 0; dayIndex < timingDays.length(); dayIndex++)
+                {
+                    if (timingDays[dayIndex] == '0')
+                        continue;
+                    timingLiterals[weekIndex][dayIndex].push_back(timingLit);
+                    if (0 < ipamir_val_lit(solver, timingLit))
+                    {
+                        timingAssigned[weekIndex][dayIndex] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    vector<string> impossibleRooms;
+    while (true)
+    {
+        vector<int> assumptionLiterals;
+        string roomId = "";
+        int timingWeek = 0;
+        int timingDay = 0;
+
+        // Find first plausibly forbidden room literal
+        for (auto &[roomIdx, assigned] : roomAssigned)
+        {
+            if (find(impossibleRooms.begin(), impossibleRooms.end(), roomIdx) == impossibleRooms.end())
+            {
+                roomId = roomIdx;
+                break;
+            }
+        }
+
+        if (roomId != "")
+        {
+            // Find corresponding room literals and add to assumption
+            for (int roomLiteral : roomLiterals[roomId])
+            {
+                assumptionLiterals.push_back(roomLiteral);
+            }
+        }
+        else
+        {
+            bool timingFound = false;
+            for (int classIndex = 0; classIndex < classes; classIndex++)
+            {
+                Class classObj = (*classVec)[classIndex];
+
+                // No suitable room found, try to find suitable timing
+                if (roomId == "")
+                {
+                    for (auto &[weekIndex, assignedDays] : timingAssigned)
+                    {
+                        for (auto &[dayIndex, assignedLiterals] : assignedDays)
+                        {
+                            if (timingAssigned[weekIndex][dayIndex])
+                            {
+                                timingFound = true;
+                                timingWeek = weekIndex;
+                                timingDay = dayIndex;
+                            }
+                            if (timingFound)
+                                break;
+                        }
+                        if (timingFound)
+                            break;
+                    }
+                }
+            }
+
+            if (!timingFound)
+            {
+                cout << "Couldn't find any more possible assumptions, exiting... \n";
+                Result nullResult;
+                nullResult.satisfied = false;
+                return nullResult;
+            }
+
+            for (int timingLiteral : timingLiterals[timingWeek][timingDay])
+            {
+                assumptionLiterals.push_back(timingLiteral);
+            }
+        }
+
+        verboseLog("Adding assumption...");
+        for (int lit : assumptionLiterals)
+        {
+            verboseLog("Assuming -" + to_string(lit));
+            ipamir_assume(solver, -lit);
+        }
+
+        auto [code, solveTimeMs] = solveInstance(solver);
+        if (code == 30)
+        {
+            verboseLog("Found restricting room " + roomId + " to be solvable, adding clauses...");
+            // Solution found, add assumptions as clauses
+            for (int lit : assumptionLiterals)
+            {
+                ipamir_add_hard(solver, -lit);
+                ipamir_add_hard(solver, 0);
+            }
+            return evaluateResult(solver, classes, code, solveTimeMs, t, r, classVec, sectioningData);
+        }
+        else
+        {
+            // Not solvable, assume something else
+            verboseLog("Assumption unsolvable, retrying...");
+            if (roomId != "")
+                impossibleRooms.push_back(roomId);
+            else
+                timingAssigned[timingWeek][timingDay] = false;
+        }
+    }
 }
 
 vector<Result> runBenchMarkInstance(vector<int> generationVariables)
@@ -382,9 +579,79 @@ vector<IterationResult> runOptimizationSwapBenchMark()
     return iterationResults;
 }
 
-void runAssumptionBenchMark()
+vector<Result> runAssumptionBenchMarkInstance(vector<int> generationVariables)
 {
-    vector<int> configVariables = getConfigVariables();
+
+    int weeks = generationVariables[0];
+    int days = generationVariables[1];
+    int hours = generationVariables[2];
+    int rooms = generationVariables[3];
+
+    void *solver = ipamir_init();
+
+    map<string, Class> classMap = getClasses();
+    map<string, int> classIndexMap;
+
+    int periods = weeks * days * hours;
+    int classes = classMap.size();
+
+    vector<Class> classVec;
+    int index = 0;
+    for (auto &pair : classMap)
+    {
+        classVec.push_back(pair.second);
+        classIndexMap[pair.second.id] = index;
+        index++;
+    }
+
+    uint32_t literalCounter = 1;
+
+    // t represents class period assignments, r represents class room assignments
+    auto [t, r] = initializeAssignmentLiteral(&literalCounter, classMap);
+
+    verboseLog("Creating clauses for " +
+               to_string(classes) + " classes with " +
+               to_string(periods) + " time periods and " +
+               to_string(rooms) + " rooms.");
+
+    // Map of distributions, used for generating distribution encodings
+    map<string, vector<DistributionVariant>> distributionsMap = getDistributions();
+
+    logTimingLiterals(&t);
+    logRoomLiterals(&r);
+
+    cout << "Running encodeStudentSectioning" << endl;
+    StudentSectioningData sectioningData = encodeStudentSectioning(solver, literalCounter, weeks, days, t, classMap, classIndexMap);
+    cout << "Finished encodeStudentSectioning" << endl;
+
+    encodeConstraints(solver,
+                      literalCounter,
+                      weeks,
+                      days,
+                      hours,
+                      classes,
+                      &t,
+                      &r,
+                      &classVec,
+                      &classMap,
+                      &classIndexMap,
+                      &distributionsMap);
+
+    // Print answer and ask user for input
+    vector<Result> results;
+    if (opts.manual_input)
+        requestInput(solver);
+    for (int i = 0; i < opts.iterations; i++)
+    {
+        Result iterationResult = runAssumptionBenchMarkIteration(&i, solver, classes, &t, &r, &classVec, &sectioningData);
+        if (!iterationResult.satisfied)
+            break;
+
+        results.push_back(iterationResult);
+    }
+    cout << "Releasing ipamir...\n";
+    ipamir_release(solver);
+    return results;
 }
 
 void runBenchMark()
@@ -405,6 +672,11 @@ void runBenchMark()
     }
     else if (opts.testType == 3)
     {
-        runAssumptionBenchMark();
+        vector<int> configVariables = getConfigVariables();
+        vector<Result> results = runAssumptionBenchMarkInstance(configVariables);
+        IterationResult iterationResults;
+        iterationResults.optimization = getOptimizationVariables();
+        iterationResults.results = results;
+        writeResultsToFile(iterationResults);
     }
 }

@@ -3,6 +3,7 @@
 #include <tuple>
 #include <iomanip>
 #include <sstream>
+#include "../config/config.h"
 #include "../../encoding/semantics/scheduling_semantics.h"
 #include "../../../libs/pugixml/src/pugixml.hpp"
 
@@ -22,6 +23,8 @@ void writeResultsToFile(IterationResult iterationResults)
 {
     pugi::xml_document doc;
     pugi::xml_node dataNode = doc.append_child("data");
+    dataNode.append_attribute("solver") = getSolverSignature();
+    dataNode.append_attribute("problem_name") = problemName;
     for (size_t i = 0; i < iterationResults.optimization.size(); i++)
     {
         tuple<string, uint16_t> optimizationTuple = iterationResults.optimization[i];
@@ -32,7 +35,7 @@ void writeResultsToFile(IterationResult iterationResults)
         pugi::xml_node entryNode = dataNode.append_child("entry");
         Result *result = &iterationResults.results[i];
         entryNode.append_attribute("iteration") = to_string(i);
-        entryNode.append_attribute("durationMs") = to_string(result->solveTimeMs);
+        entryNode.append_attribute("duration_ms") = to_string(result->solveTimeMs);
         entryNode.append_attribute("satisfied") = to_string(result->satisfied);
         entryNode.append_attribute("penalty") = to_string(result->penalty);
     }
@@ -44,6 +47,7 @@ void writeMultipleIterationResultsToFile(vector<IterationResult> results)
 {
     pugi::xml_document doc;
     pugi::xml_node dataNode = doc.append_child("data");
+    dataNode.append_attribute("solver") = getSolverSignature();
     for (size_t i = 0; i < results.size(); i++)
     {
         pugi::xml_node iterNode = dataNode.append_child("iteration");
@@ -57,7 +61,7 @@ void writeMultipleIterationResultsToFile(vector<IterationResult> results)
             pugi::xml_node entryNode = iterNode.append_child("entry");
             Result *result = &iterResult.results[j];
             entryNode.append_attribute("iteration") = to_string(j + 1);
-            entryNode.append_attribute("durationMs") = to_string(result->solveTimeMs);
+            entryNode.append_attribute("duration_ms") = to_string(result->solveTimeMs);
             entryNode.append_attribute("satisfied") = to_string(result->satisfied);
             entryNode.append_attribute("penalty") = to_string(result->penalty);
         }

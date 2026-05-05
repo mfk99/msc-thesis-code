@@ -18,6 +18,6 @@ struct IterationResult
     std::vector<std::tuple<std::string, uint16_t>> optimization;
 };
 
-std::vector<int>
-parseUserClauseInput(std::string input);
+const char *getSolverSignature();
+std::vector<int> parseUserClauseInput(std::string input);
 void runBenchMark();
