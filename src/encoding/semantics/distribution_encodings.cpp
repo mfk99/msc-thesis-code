@@ -727,7 +727,7 @@ void encodeSameRoomConstraints(void *solver,
                 for (size_t class1RoomIndex = 0; class1RoomIndex < class1.rooms.size(); class1RoomIndex++)
                 {
                     string class1RoomId = class1.rooms[class1RoomIndex].id;
-                    for (size_t class2RoomIndex = 0; class2RoomIndex < class1.rooms.size(); class2RoomIndex++)
+                    for (size_t class2RoomIndex = 0; class2RoomIndex < class2.rooms.size(); class2RoomIndex++)
                     {
                         string class2RoomId = class2.rooms[class2RoomIndex].id;
                         if (class1RoomId == class2RoomId)
