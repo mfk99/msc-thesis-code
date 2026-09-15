@@ -231,6 +231,7 @@ void encodeRoomConflictConstraints(void *solver,
 
 void encodeRoomUnavailabilityConstraints(
     void *solver,
+    uint32_t literalCounter,
     int weeks,
     int days,
     vector<vector<int>> *t,
@@ -262,23 +263,26 @@ void encodeRoomUnavailabilityConstraints(
                         {
                             if (roomUnavailabilityDays[dayIndex] == '0' || classTimingDays[dayIndex] == '0')
                                 continue;
-                            int roomUnavailabilityStart = unavailability.start;
-                            int roomUnavailabilityLength = unavailability.length;
-                            int roomUnavailabilityEnd = roomUnavailabilityStart + roomUnavailabilityLength;
-                            int classTimingStart = classTiming.start;
-                            bool overLap = (roomUnavailabilityStart < roomUnavailabilityEnd && roomUnavailabilityStart >= classTimingStart) ||
-                                           (classTimingStart < roomUnavailabilityEnd && classTimingStart >= roomUnavailabilityStart);
 
-                            if (overLap)
-                            {
-                                int timingLit = (*t)[classIndex][timingIndex];
-                                int roomLit = ((*r))[classIndex][roomIndex];
-                                verboseLog("Adding RoomUnavailability constraint: -" + to_string(timingLit) + ", -" + to_string(roomLit) + ", 0");
-                                ipamir_add_hard(solver, -timingLit);
-                                ipamir_add_hard(solver, -roomLit);
-                                ipamir_add_hard(solver, 0);
-                                constraintEncoded = true;
-                            }
+                            int unavailabilityEnd = unavailability.start + unavailability.length;
+                            int timingEnd = classTiming.start + classTiming.length;
+                            bool overlap =
+                                unavailability.start < timingEnd &&
+                                classTiming.start < unavailabilityEnd;
+
+                            if (!overlap)
+                                continue;
+
+                            int timingLit = (*t)[classIndex][timingIndex];
+                            int roomLit = (*r)[classIndex][roomIndex];
+                            verboseLog("Adding RoomUnavailability constraint: -" + to_string(timingLit) + ", -" + to_string(roomLit) + ", 0");
+
+                            ipamirAddClause(
+                                solver,
+                                {-timingLit, -roomLit},
+                                literalCounter,
+                                true);
+                            constraintEncoded = true;
                         }
                     }
                 }
@@ -287,12 +291,12 @@ void encodeRoomUnavailabilityConstraints(
     }
 }
 
-void encodeSameStartConstraint(void *solver,
-                               uint32_t literalCounter,
-                               vector<vector<int>> *t,
-                               map<string, Class> *classMap,
-                               map<string, int> *classIndexMap,
-                               vector<DistributionVariant> distributions)
+void encodeSameStartConstraints(void *solver,
+                                uint32_t literalCounter,
+                                vector<vector<int>> *t,
+                                map<string, Class> *classMap,
+                                map<string, int> *classIndexMap,
+                                vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
     {
@@ -1918,11 +1922,11 @@ void encodeConstraints(void *solver,
     encodeRoomConflictConstraints(solver, classes, weeks, days, t, r, classVec);
     cout << "Finished encodeRoomConflictConstraints" << endl;
     cout << "Running encodeRoomUnavailabilityConstraints..." << endl;
-    encodeRoomUnavailabilityConstraints(solver, weeks, days, t, r, classVec);
+    encodeRoomUnavailabilityConstraints(solver, literalCounter, weeks, days, t, r, classVec);
     cout << "Finished encodeRoomUnavailabilityConstraints" << endl;
-    cout << "Running encodeSameStartConstraint..." << endl;
-    encodeSameStartConstraint(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["SameStart"]);
-    cout << "Finished encodeSameStartConstraint" << endl;
+    cout << "Running encodeSameStartConstraints..." << endl;
+    encodeSameStartConstraints(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["SameStart"]);
+    cout << "Finished encodeSameStartConstraints" << endl;
     cout << "Running encodeSameTimeConstraint..." << endl;
     encodeSameTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["SameTime"]);
     cout << "Finished encodeSameTimeConstraint" << endl;
