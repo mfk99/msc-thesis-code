@@ -291,6 +291,7 @@ void encodeSameStartConstraint(void *solver,
                                uint32_t literalCounter,
                                vector<vector<int>> *t,
                                map<string, Class> *classMap,
+                               map<string, int> *classIndexMap,
                                vector<DistributionVariant> distributions)
 {
     for (auto &dist : distributions)
@@ -307,11 +308,13 @@ void encodeSameStartConstraint(void *solver,
         {
             string class1Id = distributionClasses[class1Index];
             Class class1 = (*classMap)[class1Id];
+            int class1LiteralIndex = (*classIndexMap)[class1.id];
 
             for (size_t class2Index = class1Index + 1; class2Index < distributionClasses.size(); class2Index++)
             {
                 string class2Id = distributionClasses[class2Index];
                 Class class2 = (*classMap)[class2Id];
+                int class2LiteralIndex = (*classIndexMap)[class2.id];
                 for (size_t class1TimingIndex = 0; class1TimingIndex < class1.timings.size(); class1TimingIndex++)
                 {
                     int class1TimingStart = class1.timings[class1TimingIndex].start;
@@ -321,8 +324,8 @@ void encodeSameStartConstraint(void *solver,
                         if (class1TimingStart == class2TimingStart)
                             continue;
 
-                        int periodLit1 = (*t)[class1Index][class1TimingIndex];
-                        int periodLit2 = (*t)[class2Index][class2TimingIndex];
+                        int periodLit1 = (*t)[class1LiteralIndex][class1TimingIndex];
+                        int periodLit2 = (*t)[class2LiteralIndex][class2TimingIndex];
                         verboseLog("Adding SameStart constraint: -" + to_string(periodLit1) + ", -" + to_string(periodLit2) + ", 0");
                         ipamirAddClause(solver,
                                         {-periodLit1, -periodLit2},
@@ -1918,7 +1921,7 @@ void encodeConstraints(void *solver,
     encodeRoomUnavailabilityConstraints(solver, weeks, days, t, r, classVec);
     cout << "Finished encodeRoomUnavailabilityConstraints" << endl;
     cout << "Running encodeSameStartConstraint..." << endl;
-    encodeSameStartConstraint(solver, literalCounter, t, classMap, (*distributionsMap)["SameStart"]);
+    encodeSameStartConstraint(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["SameStart"]);
     cout << "Finished encodeSameStartConstraint" << endl;
     cout << "Running encodeSameTimeConstraint..." << endl;
     encodeSameTimeConstraint(solver, literalCounter, t, classMap, classIndexMap, (*distributionsMap)["SameTime"]);
